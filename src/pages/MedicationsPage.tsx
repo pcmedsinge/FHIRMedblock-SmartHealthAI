@@ -125,13 +125,23 @@ const MedicationsPage = () => {
 
         {/* LEFT — Compact med list */}
         <div className="flex flex-col min-h-0 bg-white rounded-xl border border-slate-200 overflow-hidden">
-          {/* Interaction alert strip */}
-          {interactionCount > 0 && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-red-50 to-amber-50 border-b border-red-200 shrink-0">
-              <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
-              <span className="text-xs font-bold text-red-800">
-                {interactionCount} Drug Interaction{interactionCount !== 1 ? "s" : ""} Detected
-              </span>
+          {/* Interaction alert strip — shows actual drug pairs */}
+          {interactionCount > 0 && ai.tier1 && (
+            <div className="px-3 py-2 bg-gradient-to-r from-red-50 to-amber-50 border-b border-red-200 shrink-0">
+              <div className="flex items-center gap-2 mb-1">
+                <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+                <span className="text-xs font-bold text-red-800">
+                  {interactionCount} Drug Interaction{interactionCount !== 1 ? "s" : ""} Detected
+                </span>
+              </div>
+              {ai.tier1.drugInteractions.map((di) => (
+                <div key={di.id} className="flex items-start gap-2 ml-6 mb-0.5 last:mb-0">
+                  <span className="text-xs text-red-700">
+                    <span className="font-bold">{di.drugA}</span> + <span className="font-bold">{di.drugB}</span>:
+                    <span className="text-red-600 ml-1">{di.effect}</span>
+                  </span>
+                </div>
+              ))}
             </div>
           )}
 

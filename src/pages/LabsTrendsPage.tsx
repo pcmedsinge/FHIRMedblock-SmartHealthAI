@@ -102,11 +102,11 @@ const LabsTrendsPage = () => {
           <TrendingUp className="w-5 h-5 text-emerald-600" />
           <h1 className="text-2xl font-bold text-slate-900">Labs & Trends</h1>
           <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold">
-            {unified.labResults.length} results · {grouped.size} tests
+            {grouped.size} tests
           </span>
           {abnormalCount > 0 && (
             <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-bold">
-              {abnormalCount} abnormal
+              {abnormalCount} abnormal result{abnormalCount !== 1 ? "s" : ""}
             </span>
           )}
         </div>
@@ -158,6 +158,12 @@ const LabsTrendsPage = () => {
                       {Math.abs(trend.changePercent).toFixed(0)}%
                     </div>
                   )}
+                  {/* Source badges */}
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    {[...new Map(results.flatMap((r) => r.allSources).map((s) => [s.systemId, s])).values()].map((s) => (
+                      <SourceBadge key={s.systemId} source={s} compact />
+                    ))}
+                  </div>
                   {/* Abnormal badge */}
                   {hasAbnormal && (
                     <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-bold shrink-0">!</span>
@@ -187,7 +193,7 @@ const LabsTrendsPage = () => {
                 className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-lg transition-all ${
                   showCorrelations ? "bg-violet-100 text-violet-700" : "bg-white text-slate-600 border border-slate-200 hover:bg-violet-50"
                 }`}>
-                <Zap className="w-3.5 h-3.5" /> Correlations ({correlationCount})
+                <Zap className="w-3.5 h-3.5" /> How Meds Affect You ({correlationCount})
               </button>
             )}
           </div>
@@ -215,7 +221,7 @@ const LabsTrendsPage = () => {
             <>
               <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100 shrink-0 bg-violet-50">
                 <Zap className="w-5 h-5 text-violet-600" />
-                <h2 className="text-sm font-bold text-violet-900">Vital & Medication Correlations</h2>
+                <h2 className="text-sm font-bold text-violet-900">Medication & Health Connections</h2>
                 <button onClick={() => setShowCorrelations(false)} className="ml-auto w-7 h-7 flex items-center justify-center rounded-lg hover:bg-violet-100 transition-colors">
                   <X className="w-4 h-4 text-violet-600" />
                 </button>
@@ -328,7 +334,7 @@ const LabsTrendsPage = () => {
                 </div>
                 <div className="text-center p-2 bg-violet-50 rounded-lg">
                   <div className="text-lg font-extrabold text-violet-700">{correlationCount}</div>
-                  <div className="text-xs text-violet-600 font-medium">Correlations</div>
+                  <div className="text-xs text-violet-600 font-medium">Med Links</div>
                 </div>
               </div>
             </div>

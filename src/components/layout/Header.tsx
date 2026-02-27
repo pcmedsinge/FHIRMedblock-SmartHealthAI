@@ -7,7 +7,7 @@
 
 import { LogOut, Wifi, WifiOff } from "lucide-react";
 import { useFhirClient } from "../../hooks/useFhirClient";
-import { TRANSITIONS } from "../../config/designSystem";
+import { TRANSITIONS, SOURCE_STYLES } from "../../config/designSystem";
 
 const Header = () => {
   const { client, setClient } = useFhirClient();
@@ -27,21 +27,23 @@ const Header = () => {
 
       {/* Right: Connection status + disconnect */}
       <div className="flex items-center gap-3 shrink-0">
-        {/* Connection indicators */}
+        {/* Connection indicators — uses design system source colors */}
         <div className="hidden md:flex items-center gap-3">
           <div className="flex items-center gap-1.5 text-sm">
             {client ? (
-              <Wifi className="w-4 h-4 text-emerald-500" />
+              <Wifi className={`w-4 h-4 ${SOURCE_STYLES["epic-sandbox"].text}`} />
             ) : (
               <WifiOff className="w-4 h-4 text-slate-400" />
             )}
-            <span className={`font-medium ${client ? "text-emerald-600" : "text-slate-400"}`}>
-              Epic
+            <span className={`font-medium ${client ? SOURCE_STYLES["epic-sandbox"].text : "text-slate-400"}`}>
+              {SOURCE_STYLES["epic-sandbox"].label}
             </span>
           </div>
           <div className="flex items-center gap-1.5 text-sm">
-            <div className="w-2.5 h-2.5 rounded-full bg-teal-500" />
-            <span className="text-teal-600 font-medium">Community MC</span>
+            <div className={`w-2.5 h-2.5 rounded-full ${SOURCE_STYLES["community-mc"].dot}`} />
+            <span className={`${SOURCE_STYLES["community-mc"].text} font-medium`}>
+              {SOURCE_STYLES["community-mc"].label}
+            </span>
           </div>
         </div>
 

@@ -78,13 +78,15 @@ export const SOURCE_STYLES = {
     border: "border-violet-200",
     dot: "bg-violet-500",
     label: "Epic",
+    shortLabel: "E",
   },
   "community-mc": {
-    bg: "bg-teal-50",
-    text: "text-teal-700",
-    border: "border-teal-200",
-    dot: "bg-teal-500",
+    bg: "bg-blue-50",
+    text: "text-blue-700",
+    border: "border-blue-200",
+    dot: "bg-blue-500",
     label: "Community MC",
+    shortLabel: "C",
   },
 } as const;
 
@@ -97,6 +99,7 @@ export const SOURCE_FALLBACK = {
   border: "border-slate-200",
   dot: "bg-slate-400",
   label: "Unknown",
+  shortLabel: "?",
 };
 
 /**
