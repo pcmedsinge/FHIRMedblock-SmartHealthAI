@@ -177,8 +177,8 @@ const LabsTrendsPage = () => {
           <div className="shrink-0 border-t border-slate-200 bg-slate-50 p-2 flex gap-1.5">
             {ai.tier2.labTrendNarrative && (
               <button onClick={() => { setShowNarrative(!showNarrative); setShowCorrelations(false); setSelectedTest(null); }}
-                className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-lg transition-all ${
-                  showNarrative ? "bg-emerald-100 text-emerald-700" : "bg-white text-slate-600 border border-slate-200 hover:bg-emerald-50"
+                className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                  showNarrative ? "bg-emerald-600 text-white shadow-sm" : "bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 border border-emerald-200 hover:from-emerald-100 hover:to-teal-100"
                 }`}>
                 <BrainCircuit className="w-3.5 h-3.5" /> AI Summary
               </button>
@@ -190,8 +190,8 @@ const LabsTrendsPage = () => {
             )}
             {correlationCount > 0 && (
               <button onClick={() => { setShowCorrelations(!showCorrelations); setShowNarrative(false); setSelectedTest(null); }}
-                className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-lg transition-all ${
-                  showCorrelations ? "bg-violet-100 text-violet-700" : "bg-white text-slate-600 border border-slate-200 hover:bg-violet-50"
+                className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                  showCorrelations ? "bg-violet-600 text-white shadow-sm" : "bg-gradient-to-r from-violet-50 to-purple-50 text-violet-700 border border-violet-200 hover:from-violet-100 hover:to-purple-100"
                 }`}>
                 <Zap className="w-3.5 h-3.5" /> How Meds Affect You ({correlationCount})
               </button>

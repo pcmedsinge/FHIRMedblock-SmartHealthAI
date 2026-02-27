@@ -11,6 +11,7 @@ import { usePatient } from "../hooks/usePatient";
 import { useAIAnalysis } from "../hooks/useAIAnalysis";
 import SourceBadge from "../components/ui/SourceBadge";
 import MergeBadge from "../components/ui/MergeBadge";
+import CapsuleIcon from "../components/ui/CapsuleIcon";
 import { SkeletonCardList, EmptyState } from "../components/ui/Skeleton";
 import {
   Pill,
@@ -89,7 +90,7 @@ const MedicationsPage = () => {
       {/* ===== HEADER ROW ===== */}
       <div className="flex items-center justify-between shrink-0 pb-2">
         <div className="flex items-center gap-2.5">
-          <Pill className="w-5 h-5 text-blue-600" />
+          <CapsuleIcon size={32} variant="default" />
           <h1 className="text-2xl font-bold text-slate-900">Medications</h1>
           <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold">
             {unified.medications.length} total · {activeCount} active
@@ -160,14 +161,18 @@ const MedicationsPage = () => {
                   className={`w-full flex items-center gap-2 px-3 py-2 text-left border-b border-slate-100 last:border-0 transition-all ${
                     isSelected ? "bg-blue-50 border-l-2 border-l-blue-500" : "hover:bg-slate-50 border-l-2 border-l-transparent"
                   }`}>
-                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-                    hasInteraction ? "bg-amber-100" : isActive ? "bg-blue-50" : "bg-slate-100"
-                  }`}>
-                    {hasInteraction ? <AlertTriangle className="w-3.5 h-3.5 text-amber-600" /> : <Pill className={`w-3.5 h-3.5 ${isActive ? "text-blue-500" : "text-slate-400"}`} />}
+                  <div className="w-8 h-8 flex items-center justify-center shrink-0">
+                    <CapsuleIcon size={24} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-[15px] font-semibold text-slate-900 truncate">{med.name}</div>
                     <div className="text-sm text-slate-500 truncate">{med.dosageInstruction ?? "No dosage info"}</div>
+                  </div>
+                  {/* Source badges */}
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    {[...new Map(med.allSources.map((s) => [s.systemId, s])).values()].map((s) => (
+                      <SourceBadge key={s.systemId} source={s} compact />
+                    ))}
                   </div>
                   <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold shrink-0 ${
                     isActive ? "bg-emerald-100 text-emerald-700" : isStopped ? "bg-slate-100 text-slate-500" : "bg-amber-100 text-amber-700"
@@ -184,8 +189,8 @@ const MedicationsPage = () => {
             {/* AI Summary toggle */}
             {ai.tier2.medicationSummary && (
               <button onClick={() => { setShowMedSummary(!showMedSummary); setSelectedMed(null); }}
-                className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-lg transition-all ${
-                  showMedSummary ? "bg-emerald-100 text-emerald-700" : "bg-white text-slate-600 border border-slate-200 hover:bg-emerald-50"
+                className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                  showMedSummary ? "bg-emerald-600 text-white shadow-sm" : "bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 border border-emerald-200 hover:from-emerald-100 hover:to-teal-100"
                 }`}>
                 <BrainCircuit className="w-3.5 h-3.5" /> AI Summary
               </button>
@@ -205,7 +210,7 @@ const MedicationsPage = () => {
                   : "bg-white text-slate-600 border border-slate-200 hover:bg-violet-50"
               }`}>
               {ai.doctorQuestionsLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Stethoscope className="w-3.5 h-3.5" />}
-              Doctor Qs
+              Visit Topics
             </button>
           </div>
         </div>
@@ -232,7 +237,7 @@ const MedicationsPage = () => {
             <>
               <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100 shrink-0 bg-violet-50">
                 <MessageSquare className="w-5 h-5 text-violet-600" />
-                <h2 className="text-sm font-bold text-violet-900">Questions for Your Doctor</h2>
+                <h2 className="text-sm font-bold text-violet-900">Topics to Discuss at Your Visit</h2>
                 <button onClick={() => setShowDoctorQuestions(false)} className="ml-auto w-7 h-7 flex items-center justify-center rounded-lg hover:bg-violet-100 transition-colors">
                   <X className="w-4 h-4 text-violet-600" />
                 </button>
@@ -311,13 +316,15 @@ const MedicationsPage = () => {
 
                 {/* AI explanation */}
                 {selExplanation && (
-                  <div className="p-3. bg-emerald-50 rounded-xl border border-emerald-200">
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      <BrainCircuit className="w-4 h-4 text-emerald-600" />
-                      <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">AI Explanation</span>
+                  <div className="rounded-xl border-2 border-emerald-300 bg-white overflow-hidden shadow-sm">
+                    <div className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500">
+                      <BrainCircuit className="w-4 h-4 text-white" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-white">AI Insight</span>
                     </div>
-                    <p className="text-sm text-slate-800 leading-relaxed">{selExplanation.explanation}</p>
-                    <p className="text-xs text-slate-500 mt-2">Not medical advice — discuss with your provider</p>
+                    <div className="px-4 py-3">
+                      <p className="text-[15px] text-slate-900 leading-[1.7] font-medium">{selExplanation.explanation}</p>
+                      <p className="text-xs text-slate-400 mt-3 pt-2 border-t border-slate-100">Not medical advice — discuss with your provider</p>
+                    </div>
                   </div>
                 )}
 
