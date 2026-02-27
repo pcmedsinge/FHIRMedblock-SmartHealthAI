@@ -55,6 +55,14 @@ export {
   insightQuestionContext,
 } from "./llm/doctorQuestions";
 
+// --- Tier 3 On-Demand LLM: Pre-Visit Report ---
+export { generatePreVisitNarrative } from "./llm/reportNarrative";
+export type { PreVisitNarrative, ReportInputData } from "./llm/reportNarrative";
+
+// --- Report Assembly (pure function) ---
+export { assemblePreVisitReport } from "./preVisitReport";
+export type { PreVisitReport } from "./preVisitReport";
+
 // -----------------------------------------------------------
 // Tier 1 Orchestrator — runs all rule-based analysis
 // -----------------------------------------------------------

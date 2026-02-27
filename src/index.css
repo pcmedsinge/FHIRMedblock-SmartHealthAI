@@ -61,19 +61,34 @@ html {
 
 /* Print styles */
 @media print {
-  header, nav, aside, button, .print\\:hidden {
+  header, nav, aside, .print\\:hidden {
+    display: none !important;
+  }
+  /* Hide non-report buttons during print */
+  button:not([data-print]) {
     display: none !important;
   }
   body {
     background: white !important;
     color: black !important;
-    font-size: 12pt !important;
+    font-size: 11pt !important;
+    line-height: 1.4 !important;
   }
   main {
     padding: 0 !important;
     margin: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+  /* Remove scrollable containers for print */
+  .h-full, .h-screen {
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .overflow-y-auto, .overflow-hidden {
+    overflow: visible !important;
   }
   .patient-banner {
     display: block !important;
@@ -82,11 +97,25 @@ html {
     margin-bottom: 16px !important;
     break-inside: avoid;
   }
-  .break-inside-avoid, tr, .bg-white {
+  /* Report sections */
+  section, .break-inside-avoid, tr, .bg-white {
     break-inside: avoid;
   }
+  /* Clean up visual noise */
   * {
     box-shadow: none !important;
+  }
+  /* Ensure readable text */
+  .text-\\[15px\\] {
+    font-size: 11pt !important;
+  }
+  /* Remove gradients for print */
+  .bg-gradient-to-r, .bg-gradient-to-br {
+    background: white !important;
+  }
+  /* Page margins */
+  @page {
+    margin: 1.5cm;
   }
 }
 

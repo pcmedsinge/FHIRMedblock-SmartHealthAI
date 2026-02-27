@@ -56,13 +56,13 @@ Not every FHIR domain deserves its own page. Domains are categorized as **Views*
 | Phase | Name | Status |
 |-------|------|--------|
 | 0 | Foundation | **DONE** |
-| 1 | Epic Live Data Fetch | Not started |
-| 2 | Synthetic Second Source | Not started |
-| 3 | Multi-Source Merge Engine | Not started |
-| 4 | Core UI Shell | Not started |
-| 5 | AI Analysis Engine (Tiered) | Not started |
-| 6 | AI-Powered Dashboard & Views | Not started |
-| 7 | Pre-Visit Report Generator | Not started |
+| 1 | Epic Live Data Fetch | **DONE** |
+| 2 | Synthetic Second Source | **DONE** |
+| 3 | Multi-Source Merge Engine | **DONE** |
+| 4 | Core UI Shell | **DONE** |
+| 5 | AI Analysis Engine (Tiered) | **DONE** |
+| 6 | AI-Powered Dashboard & Views | **DONE** |
+| 7 | Pre-Visit Report Generator | **DONE** |
 | 8 | Polish & Production Readiness | Not started |
 
 > Detailed plans for each phase are in `plans/phase-N/README.md`
