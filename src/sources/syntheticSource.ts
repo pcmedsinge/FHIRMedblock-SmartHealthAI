@@ -68,21 +68,13 @@ export interface SyntheticDataResult {
 let cachedResult: SyntheticDataResult | null = null;
 
 // -----------------------------------------------------------
-// Simulated network delay (realistic UX)
-// -----------------------------------------------------------
-
-function simulateNetworkDelay(ms: number = 500): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-// -----------------------------------------------------------
 // Main fetch function
 // -----------------------------------------------------------
 
 /**
  * Load and parse all synthetic Community Medical Center data.
  * Uses the same parsers as Epic data — proving source-agnostic pipeline.
- * Simulates 500ms network delay for realistic loading UX.
+ * Data is bundled inline (no network fetch), so parsing is instant.
  *
  * Returns cached result on subsequent calls (instant).
  */
@@ -94,9 +86,6 @@ export async function fetchSyntheticData(): Promise<SyntheticDataResult> {
     }
     return cachedResult;
   }
-
-  // Simulate network delay
-  await simulateNetworkDelay(500);
 
   // Refresh the source tag timestamp
   const source: SourceTag = {
@@ -143,6 +132,13 @@ export async function fetchSyntheticData(): Promise<SyntheticDataResult> {
 
   return result;
 }
+
+// -----------------------------------------------------------
+// Eager preload — parse synthetic data at import time so it's
+// ready when useUnifiedData needs it (saves ~500ms on first load).
+// Safe because the data is bundled inline (no network fetch).
+// -----------------------------------------------------------
+fetchSyntheticData();
 
 /**
  * Clear the cache to force re-parsing on next fetch.

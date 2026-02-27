@@ -47,11 +47,11 @@ const SECTIONS: NavSection[] = [
     ],
   },
   {
-    title: "MY TOOLS",
+    title: "MY VISIT",
     color: "text-blue-600",
     icon: FileText,
     items: [
-      { to: "/pre-visit", icon: FileText, label: "Visit Prep" },
+      { to: "/pre-visit", icon: FileText, label: "Pre-Visit Report" },
     ],
   },
 ];

@@ -325,10 +325,15 @@ const PreVisitPage = () => {
       <div className="flex items-center justify-between shrink-0 pb-2">
         <div className="flex items-center gap-2">
           <FileText className="w-5 h-5 text-emerald-600" />
-          <h1 className="text-lg font-bold text-slate-900">Pre-Visit Report</h1>
-          <span className="text-sm text-slate-600 font-medium">
-            {report.patient.firstName} {report.patient.lastName} · {report.dataSources.length} provider{report.dataSources.length !== 1 ? "s" : ""} · {new Date(report.generatedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
-          </span>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold text-slate-900">Pre-Visit Report</h1>
+              <span className="text-sm text-slate-600 font-medium">
+                {report.patient.firstName} {report.patient.lastName} · {report.dataSources.length} provider{report.dataSources.length !== 1 ? "s" : ""} · {new Date(report.generatedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+              </span>
+            </div>
+            <p className="text-xs text-emerald-600 mt-0.5">Review before your next appointment — bring this to help your provider focus on what matters.</p>
+          </div>
         </div>
         <div className="flex items-center gap-1.5">
           {/* AI Generate */}
@@ -396,7 +401,7 @@ const PreVisitPage = () => {
                 <div key={med.id} className="flex items-start gap-1.5 py-1 border-b border-slate-100 last:border-0">
                   <div className="flex-1 min-w-0">
                     <div className="text-xs font-bold text-slate-900 leading-tight">{med.name}</div>
-                    <div className="text-[11px] text-slate-500 leading-tight">{med.dosageInstruction ?? "No dosage info"}</div>
+                    <div className="text-[11px] text-slate-600 leading-snug">{med.dosageInstruction ?? "No dosage info"}</div>
                   </div>
                   <div className="flex items-center gap-0.5 shrink-0 mt-0.5">
                     {med.mergeStatus === "conflict" && <span className="text-[8px] px-1 py-0.5 rounded bg-red-100 text-red-700 font-bold">CONFLICT</span>}
@@ -452,10 +457,10 @@ const PreVisitPage = () => {
                 <div key={a.id} className="py-1 border-b border-slate-100 last:border-0">
                   <div className="flex items-center gap-1 mb-0.5">
                     <span className={`text-[9px] px-1 py-0.5 rounded font-bold uppercase ${a.severity === "critical" ? "bg-red-100 text-red-700" : a.severity === "high" ? "bg-amber-100 text-amber-700" : "bg-yellow-100 text-yellow-700"}`}>{a.severity}</span>
-                    <span className="text-[11px] text-slate-500 truncate">{a.category}</span>
+                    <span className="text-[11px] text-slate-600 truncate">{a.category}</span>
                   </div>
                   <div className="text-xs text-slate-800 leading-tight font-bold">{a.title}</div>
-                  <div className="text-[11px] text-slate-500 leading-tight">{a.explanation}</div>
+                  <div className="text-[11px] text-slate-600 leading-snug">{a.explanation}</div>
                 </div>
               ))}
             </div>
@@ -467,7 +472,7 @@ const PreVisitPage = () => {
             <span className="text-xs font-bold text-slate-800 uppercase tracking-wide">Abnormal Labs</span>
             <span className="text-[11px] text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full font-bold">{report.labs.abnormal.length}</span>
           </div>
-          <p className="text-[11px] text-slate-500 italic mb-1.5">Results outside normal range — discuss with your provider</p>
+          <p className="text-[11px] text-slate-600 italic mb-1.5">Results outside normal range — discuss with your provider</p>
           {report.labs.trendSummaries.length > 0 && (
             <div className="p-1.5 bg-emerald-50 rounded border border-emerald-200 mb-1.5">
               {report.labs.trendSummaries.slice(0, 2).map((t, i) => <p key={i} className="text-[11px] text-emerald-800 leading-tight font-medium">{t}</p>)}
@@ -488,7 +493,7 @@ const PreVisitPage = () => {
                         </span>
                       )}
                     </div>
-                    <div className="text-[11px] text-slate-500 leading-tight">
+                    <div className="text-[11px] text-slate-600 leading-snug">
                       <span className="font-bold text-slate-700">{lab.value}</span> {lab.unit ?? ""}
                       {lab.referenceRange && (
                         <span className="text-slate-400"> (normal: {typeof lab.referenceRange === "object" ? `${lab.referenceRange.low ?? "?"}–${lab.referenceRange.high ?? "?"}` : lab.referenceRange})</span>
@@ -510,7 +515,7 @@ const PreVisitPage = () => {
                 <span className="text-[11px] text-orange-700 bg-orange-100 px-1.5 py-0.5 rounded-full font-bold">{report.careGaps.overdue.length}</span>
               </div>
               {report.careGaps.overdue.map((g) => (
-                <div key={g.id} className="text-xs text-slate-700 leading-tight mb-1">
+                <div key={g.id} className="text-xs text-slate-700 leading-snug mb-1">
                   <span className={`text-[9px] px-1 py-0.5 rounded font-bold uppercase mr-1 ${g.priority === "high" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>{g.priority}</span>
                   <span className="font-bold">{g.recommendation}</span> — {g.reason}
                 </div>
