@@ -320,7 +320,7 @@ const PreVisitPage = () => {
   const allAlerts = [...report.safety.critical, ...report.safety.high, ...report.safety.medium];
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <div className="h-full flex flex-col overflow-hidden animate-content-reveal">
       {/* ===== HEADER ===== */}
       <div className="flex items-center justify-between shrink-0 pb-2">
         <div className="flex items-center gap-2">

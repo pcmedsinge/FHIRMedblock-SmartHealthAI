@@ -36,6 +36,7 @@ import {
   ClipboardList,
   ChevronRight,
   Zap,
+  Info,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -219,7 +220,7 @@ const DashboardPage = () => {
   }
 
   return (
-    <div className="h-full flex flex-col gap-3 overflow-hidden">
+    <div className="h-full flex flex-col gap-3 overflow-hidden animate-content-reveal">
       {/* ── Row 1: Header ── */}
       <div className="shrink-0 flex items-center justify-between">
         <div>
@@ -238,6 +239,24 @@ const DashboardPage = () => {
           Refresh
         </button>
       </div>
+
+      {/* Status banners — AI unavailable / Epic down */}
+      {!ai.aiAvailable && (
+        <div className="shrink-0 flex items-center gap-2 px-3 py-2 bg-amber-50/80 rounded-xl border border-amber-200/60" role="status">
+          <Info className="w-4 h-4 text-amber-600 shrink-0" />
+          <span className="text-sm text-amber-800">
+            AI insights unavailable — showing rule-based analysis only
+          </span>
+        </div>
+      )}
+      {unified.stageStatus.epic === "error" && (
+        <div className="shrink-0 flex items-center gap-2 px-3 py-2 bg-blue-50/80 rounded-xl border border-blue-200/60" role="status">
+          <Info className="w-4 h-4 text-blue-600 shrink-0" />
+          <span className="text-sm text-blue-800">
+            Live data unavailable — showing synthetic records only
+          </span>
+        </div>
+      )}
 
       {/* ── Row 2: Alert banner with rich overlay expansion ── */}
       {sortedAlertItems.length > 0 && (
@@ -471,8 +490,8 @@ const DashboardPage = () => {
 
       {/* AI loading indicator (slim, only during Tier 2 load) */}
       {ai.tier2.isLoading && ai.tier2.healthSnapshot.length === 0 && (
-        <div className="shrink-0 flex items-center gap-2 px-3 py-2 bg-emerald-50/60 rounded-xl border border-emerald-200/50">
-          <Loader2 className="w-4 h-4 text-emerald-600 animate-spin" />
+        <div className="shrink-0 flex items-center gap-2 px-3 py-2 bg-emerald-50/60 rounded-xl border border-emerald-200/50" role="status" aria-live="polite">
+          <Loader2 className="w-4 h-4 text-emerald-600 animate-spin" aria-hidden="true" />
           <span className="text-sm text-slate-600">
             Analyzing your health records...
           </span>

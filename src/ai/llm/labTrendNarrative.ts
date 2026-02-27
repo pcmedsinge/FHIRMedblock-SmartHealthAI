@@ -56,7 +56,8 @@ function buildLabTrendPrompt(
   prompt += `2. Any values that are outside normal ranges\n`;
   prompt += `3. What these results might mean in plain language\n`;
   prompt += `4. End with a gentle recommendation to discuss with their provider\n\n`;
-  prompt += `Use the patient's first name. Be empathetic, clear, and concise. Write at a 6th-grade reading level.`;
+  prompt += `Use the patient's first name. Be empathetic, clear, and concise. Write at a 6th-grade reading level.\n`;
+  prompt += `Use **bold** (markdown) to highlight key lab names, values, percentages, and important findings so the reader can scan quickly.`;
 
   return prompt;
 }

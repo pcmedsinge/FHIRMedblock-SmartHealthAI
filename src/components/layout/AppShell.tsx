@@ -17,6 +17,14 @@ const AppShell = () => {
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
+      {/* Skip to content — visible only on focus (keyboard nav) */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-white focus:text-emerald-700 focus:font-semibold focus:rounded-lg focus:shadow-lg focus:ring-2 focus:ring-emerald-500"
+      >
+        Skip to main content
+      </a>
+
       {/* Sidebar */}
       <Sidebar />
 
@@ -26,7 +34,7 @@ const AppShell = () => {
         <Header />
 
         {/* Content area — viewport-fit, pages own their scroll behavior */}
-        <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <main id="main-content" className="flex-1 flex flex-col min-h-0 overflow-hidden">
           {/* Patient banner — pinned at top, never scrolls */}
           {patient && (
             <div className="shrink-0 px-6 pt-4">

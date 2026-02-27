@@ -7,4 +7,14 @@ export default defineConfig({
   server: {
     port: 3000, // Must match Epic's registered redirect URI
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          recharts: ["recharts"],
+          fhirclient: ["fhirclient"],
+        },
+      },
+    },
+  },
 });

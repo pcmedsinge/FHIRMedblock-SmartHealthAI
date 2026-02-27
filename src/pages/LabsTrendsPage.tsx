@@ -13,6 +13,7 @@ import { usePatient } from "../hooks/usePatient";
 import { useAIAnalysis } from "../hooks/useAIAnalysis";
 import SparklineChart from "../components/data/SparklineChart";
 import SourceBadge from "../components/ui/SourceBadge";
+import NarrativeText from "../components/ui/NarrativeText";
 import { SkeletonCardList, EmptyState } from "../components/ui/Skeleton";
 import {
   TrendingUp,
@@ -95,7 +96,7 @@ const LabsTrendsPage = () => {
   const correlationCount = ai.tier1?.vitalCorrelations.length ?? 0;
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <div className="h-full flex flex-col overflow-hidden animate-content-reveal">
       {/* ===== HEADER ROW ===== */}
       <div className="flex items-center justify-between shrink-0 pb-2">
         <div className="flex items-center gap-2.5">
@@ -212,7 +213,7 @@ const LabsTrendsPage = () => {
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto p-4">
-                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">{ai.tier2.labTrendNarrative.text}</p>
+                <NarrativeText text={ai.tier2.labTrendNarrative.text} />
                 <p className="text-xs text-slate-400 mt-4">{ai.disclaimer}</p>
               </div>
             </>

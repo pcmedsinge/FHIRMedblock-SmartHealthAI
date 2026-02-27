@@ -84,7 +84,7 @@ const Sidebar = () => {
       </div>
 
       {/* Navigation sections */}
-      <nav className="flex-1 py-4 px-3 overflow-y-auto space-y-5">
+      <nav aria-label="Main navigation" className="flex-1 py-4 px-3 overflow-y-auto space-y-5">
         {SECTIONS.map(({ title, color, items }) => (
           <div key={title}>
             {/* Section header */}

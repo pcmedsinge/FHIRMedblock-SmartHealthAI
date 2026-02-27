@@ -39,6 +39,15 @@
   }
 }
 
+/* Content reveal — subtle fade when skeleton resolves to real content */
+@keyframes contentReveal {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-content-reveal {
+  animation: contentReveal 0.25s ease-out;
+}
+
 /* Focus ring for keyboard navigation (WCAG 2.4.7) */
 *:focus-visible {
   outline: 2px solid #3b82f6;

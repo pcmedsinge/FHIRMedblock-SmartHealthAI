@@ -54,6 +54,7 @@ const Header = () => {
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
               text-slate-500 hover:text-red-600 hover:bg-red-50 ${TRANSITIONS.fast}`}
             title="Disconnect from Epic"
+            aria-label="Disconnect from Epic"
           >
             <LogOut className="w-4 h-4" />
             <span className="hidden md:inline">Disconnect</span>

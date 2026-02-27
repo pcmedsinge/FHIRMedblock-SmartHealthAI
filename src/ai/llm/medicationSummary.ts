@@ -92,7 +92,8 @@ function buildMedicationPrompt(
   prompt += `2. Highlights any safety concerns (interactions, single-source gaps)\n`;
   prompt += `3. Notes medications that providers may not know about (cross-system gaps)\n`;
   prompt += `4. Ends with a recommendation to bring this summary to their next appointment\n\n`;
-  prompt += `Use ${patient.firstName}'s name. Be empathetic, clear, and concise. Write at a 6th-grade reading level.`;
+  prompt += `Use ${patient.firstName}'s name. Be empathetic, clear, and concise. Write at a 6th-grade reading level.\n`;
+  prompt += `Use **bold** (markdown) to highlight key medication names, dosages, interactions, and important findings so the reader can scan quickly.`;
 
   return prompt;
 }

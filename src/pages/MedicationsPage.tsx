@@ -12,6 +12,7 @@ import { useAIAnalysis } from "../hooks/useAIAnalysis";
 import SourceBadge from "../components/ui/SourceBadge";
 import MergeBadge from "../components/ui/MergeBadge";
 import CapsuleIcon from "../components/ui/CapsuleIcon";
+import NarrativeText from "../components/ui/NarrativeText";
 import { SkeletonCardList, EmptyState } from "../components/ui/Skeleton";
 import {
   Pill,
@@ -86,7 +87,7 @@ const MedicationsPage = () => {
   const selIsExplaining = selectedMed ? ai.explainLoading === selectedMed.id : false;
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <div className="h-full flex flex-col overflow-hidden animate-content-reveal">
       {/* ===== HEADER ROW ===== */}
       <div className="flex items-center justify-between shrink-0 pb-2">
         <div className="flex items-center gap-2.5">
@@ -228,7 +229,7 @@ const MedicationsPage = () => {
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto p-4">
-                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">{ai.tier2.medicationSummary.text}</p>
+                <NarrativeText text={ai.tier2.medicationSummary.text} />
                 <p className="text-xs text-slate-400 mt-4">{ai.disclaimer}</p>
               </div>
             </>
