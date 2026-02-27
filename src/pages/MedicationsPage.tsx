@@ -90,7 +90,7 @@ const MedicationsPage = () => {
       <div className="flex items-center justify-between shrink-0 pb-2">
         <div className="flex items-center gap-2.5">
           <Pill className="w-5 h-5 text-blue-600" />
-          <h1 className="text-xl font-bold text-slate-900">Medications</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Medications</h1>
           <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold">
             {unified.medications.length} total · {activeCount} active
           </span>
@@ -113,7 +113,7 @@ const MedicationsPage = () => {
           <Filter className="w-3.5 h-3.5 text-slate-400" />
           {(["all", "active", "stopped", "unknown"] as StatusFilter[]).map((f) => (
             <button key={f} onClick={() => setStatusFilter(f)}
-              className={`px-2.5 py-1.5 text-[11px] font-medium rounded-md transition-all ${statusFilter === f ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>
+              className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-all ${statusFilter === f ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>
               {f.charAt(0).toUpperCase() + f.slice(1)}
             </button>
           ))}
@@ -156,10 +156,10 @@ const MedicationsPage = () => {
                     {hasInteraction ? <AlertTriangle className="w-3.5 h-3.5 text-amber-600" /> : <Pill className={`w-3.5 h-3.5 ${isActive ? "text-blue-500" : "text-slate-400"}`} />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-slate-900 truncate">{med.name}</div>
-                    <div className="text-[11px] text-slate-500 truncate">{med.dosageInstruction ?? "No dosage info"}</div>
+                    <div className="text-[15px] font-semibold text-slate-900 truncate">{med.name}</div>
+                    <div className="text-sm text-slate-500 truncate">{med.dosageInstruction ?? "No dosage info"}</div>
                   </div>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold shrink-0 ${
                     isActive ? "bg-emerald-100 text-emerald-700" : isStopped ? "bg-slate-100 text-slate-500" : "bg-amber-100 text-amber-700"
                   }`}>
                     {med.status}
@@ -174,14 +174,14 @@ const MedicationsPage = () => {
             {/* AI Summary toggle */}
             {ai.tier2.medicationSummary && (
               <button onClick={() => { setShowMedSummary(!showMedSummary); setSelectedMed(null); }}
-                className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] font-medium rounded-lg transition-all ${
+                className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-lg transition-all ${
                   showMedSummary ? "bg-emerald-100 text-emerald-700" : "bg-white text-slate-600 border border-slate-200 hover:bg-emerald-50"
                 }`}>
                 <BrainCircuit className="w-3.5 h-3.5" /> AI Summary
               </button>
             )}
             {ai.tier2.isLoading && !ai.tier2.medicationSummary && (
-              <div className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] text-slate-400">
+              <div className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs text-slate-400">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" /> Analyzing…
               </div>
             )}
@@ -189,7 +189,7 @@ const MedicationsPage = () => {
             <button
               onClick={() => { if (!ai.doctorQuestions) ai.askDoctorAboutMeds(); setShowDoctorQuestions(!showDoctorQuestions); setSelectedMed(null); }}
               disabled={ai.doctorQuestionsLoading}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] font-medium rounded-lg transition-all ${
+              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-lg transition-all ${
                 ai.doctorQuestionsLoading ? "bg-slate-100 text-slate-400 cursor-wait"
                   : showDoctorQuestions && ai.doctorQuestions ? "bg-violet-100 text-violet-700"
                   : "bg-white text-slate-600 border border-slate-200 hover:bg-violet-50"
@@ -335,15 +335,15 @@ const MedicationsPage = () => {
               <div className="grid grid-cols-3 gap-3 w-full max-w-xs">
                 <div className="text-center p-2 bg-blue-50 rounded-lg">
                   <div className="text-lg font-extrabold text-blue-700">{activeCount}</div>
-                  <div className="text-[10px] text-blue-600 font-medium">Active</div>
+                  <div className="text-xs text-blue-600 font-medium">Active</div>
                 </div>
                 <div className="text-center p-2 bg-red-50 rounded-lg">
                   <div className="text-lg font-extrabold text-red-700">{interactionCount}</div>
-                  <div className="text-[10px] text-red-600 font-medium">Interactions</div>
+                  <div className="text-xs text-red-600 font-medium">Interactions</div>
                 </div>
                 <div className="text-center p-2 bg-slate-50 rounded-lg">
                   <div className="text-lg font-extrabold text-slate-700">{unified.medications.length}</div>
-                  <div className="text-[10px] text-slate-500 font-medium">Total</div>
+                  <div className="text-xs text-slate-500 font-medium">Total</div>
                 </div>
               </div>
             </div>

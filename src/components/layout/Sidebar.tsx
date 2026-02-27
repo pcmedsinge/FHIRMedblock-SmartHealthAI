@@ -41,7 +41,7 @@ const SECTIONS: NavSection[] = [
     color: "text-emerald-600",
     icon: Heart,
     items: [
-      { to: "/dashboard", icon: BrainCircuit, label: "Home" },
+      { to: "/dashboard", icon: BrainCircuit, label: "Overview" },
       { to: "/medications", icon: Pill, label: "Medications" },
       { to: "/labs", icon: TrendingUp, label: "Labs & Vitals" },
     ],
