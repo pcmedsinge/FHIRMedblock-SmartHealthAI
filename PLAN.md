@@ -3,384 +3,115 @@
 ## Vision
 A cross-system AI health companion that connects to multiple FHIR-enabled health systems, aggregates the patient's complete health picture, and uses AI to translate medical data into plain-language insights, detect care gaps, flag medication risks across prescribers, and prepare patients for doctor visits.
 
+## Goals
+1. **Think, not just read** — Demonstrate that a SMART on FHIR app should interpret and reason about health data, not merely display it
+2. **AI-augmented insight** — Show how AI can carry forward the "thinking" concept — turning raw FHIR resources into actionable, patient-friendly intelligence
+3. **Deep personal understanding** — Build this to deeply understand the concepts, architecture, and purpose behind SMART on FHIR and healthcare AI
+4. **Beyond MyChart demo** — Create a compelling demo for peers that clearly shows capabilities no patient portal offers today
+
+> **Operating constraint:** The app will be run many times for demos and learning. AI features must be cost-optimized so repeated runs stay near-zero cost.
+
 ## Three Pillars
 1. **Aggregate** — Connect multiple FHIR servers, build one unified record
 2. **Interpret** — AI translates, trends, correlates, and flags
 3. **Act** — Generate pre-visit summaries, care gap reminders, shareable reports
 
----
+## Domain Strategy — "Think, Don't List"
 
-## Phase 0 — Foundation (DONE)
-**Status: Complete**
+Not every FHIR domain deserves its own page. Domains are categorized as **Views** (user-facing pages) or **AI Fuel** (fetched and parsed, but consumed by the AI engine — never shown as standalone lists).
 
-Ported from EpicSmartPatientApp-2:
-- Vite + React 19 + TypeScript 5.9 + Tailwind CSS v4
-- SMART on FHIR OAuth2 PKCE flow (launch, callback, fhirClient)
-- Patient demographics hook with module-level cache
-- Token monitor with session expiry warnings
-- Toast notification system
-- Error handling (fhirErrorHandler)
-- UI primitives (LoadingSpinner, ErrorDisplay, ToastContainer)
+| Domain | Role | Why |
+|--------|------|-----|
+| **Medications** | **View** | Cross-system drug interactions is THE demo story |
+| **Lab Results** | **View** (merged with vitals) | AI trend narrative is the most visually compelling feature |
+| **Vitals** | **AI Fuel** (merged into Labs & Trends) | BP + meds → "Is your medication working?", Weight + meds → "Known side effect", HR + cardiac meds → "Dose effectiveness". Vitals drive AI correlation insights, not standalone charts. |
+| **Conditions** | **AI Fuel** | Powers care gap detection ("You have diabetes but no A1c in 8 months") |
+| **Allergies** | **AI Fuel** | Powers conflict alerts ("Epic says allergy to Penicillin, Community MC prescribed Amoxicillin") |
+| **Immunizations** | **AI Fuel** | Powers care gap alerts ("You're 52, no Shingrix on record") |
+| **Encounters** | **AI Fuel** | Timeline context within AI insights ("prescribed after ER visit on Jan 15") |
+| ~~Insurance~~ | **Dropped** | Was synthetic in old app, doesn't serve the "think" story |
+| ~~Claims/EOB~~ | **Dropped** | Different product category, cost transparency ≠ health intelligence |
+| ~~Documents~~ | **Dropped** | Read-only unstructured text, pure MyChart pattern |
 
-**Files:**
-```
-src/config/smart.ts           — SMART on FHIR configuration
-src/context/FhirContext.tsx    — Authenticated FHIR client context
-src/context/ToastContext.tsx   — Toast notification system
-src/hooks/useFhirClient.ts    — FHIR client access hook
-src/hooks/usePatient.ts       — Patient demographics with cache
-src/hooks/useTokenMonitor.ts  — Token expiry monitor
-src/utils/tokenManager.ts     — Token lifecycle management
-src/utils/fhirErrorHandler.ts — Error classification & friendly messages
-src/utils/patientParser.ts    — FHIR Patient → PatientDemographics
-src/types/patient.ts          — Patient type definitions
-src/components/ui/*            — LoadingSpinner, ErrorDisplay, Toast
-src/pages/LaunchPage.tsx       — Epic OAuth login screen
-src/pages/CallbackPage.tsx     — OAuth callback handler
-```
+### How Vitals Become "Thinking" Data
 
----
+| Vital | Raw Display (MyChart) | AI Cross-Reference (SmartHealthAI) |
+|-------|----------------------|-----------------------------------|
+| Blood Pressure | Line chart | "Your BP has been above 140/90 for 3 consecutive visits while on Lisinopril — your medication may not be controlling it." |
+| Weight | A number | "You've gained 12 lbs since starting Prednisone 6 months ago — weight gain is a known side effect." |
+| Heart Rate | A graph | "You're on a beta blocker but resting HR is still 95 — discuss dose optimization." |
+| BMI | A label | "BMI moved from 24.8 to 27.1 over 12 months — combined with fasting glucose of 118, pre-diabetes risk increases." |
+| O2 Sat / Temp / Resp Rate | Skip | Acute care vitals — no outpatient companion value |
 
-## Phase 1 — Epic Live Data Fetch
-**Goal:** Fetch all patient data from the live Epic FHIR connection (primary source).
-
-### 1.1 — Domain Data Types
-Create TypeScript interfaces for each clinical domain:
-- `src/types/medication.ts` — MedicationRequest parsed type
-- `src/types/labResult.ts` — Observation (lab) parsed type
-- `src/types/vital.ts` — Observation (vital signs) parsed type
-- `src/types/allergy.ts` — AllergyIntolerance parsed type
-- `src/types/condition.ts` — Condition parsed type
-- `src/types/immunization.ts` — Immunization parsed type
-- `src/types/encounter.ts` — Encounter parsed type
-
-### 1.2 — FHIR Parsers
-Create parsers for each domain (raw FHIR → clean typed objects):
-- `src/utils/medicationParser.ts`
-- `src/utils/labResultParser.ts`
-- `src/utils/vitalParser.ts`
-- `src/utils/allergyParser.ts`
-- `src/utils/conditionParser.ts`
-- `src/utils/immunizationParser.ts`
-- `src/utils/encounterParser.ts`
-
-### 1.3 — Unified Data Fetch Hook
-Create `src/hooks/useEpicData.ts`:
-- Single hook that fetches all clinical domains via `Promise.allSettled`
-- Module-level cache with 5-min TTL
-- Returns all domain data arrays + loading + error + refetch
-
-### 1.4 — Source Tagging
-Every parsed record carries a `source` field:
-```typescript
-interface SourceTag {
-  systemName: string;    // "Epic MyHealth"
-  systemId: string;      // "epic-sandbox"
-  fetchedAt: string;     // ISO timestamp
-}
-```
-
-**Deliverable:** All patient data fetched from Epic, parsed, typed,  and source-tagged.
+**The 4 user-facing views:**
+1. **AI Dashboard** — Home screen. Top insights, alerts, health snapshot.
+2. **Medications** — Cross-system med list with interaction alerts and source badges.
+3. **Labs & Trends** — Cross-source labs + vitals with AI trend narrative and correlation insights.
+4. **Pre-Visit Report** — Generated PDF summary for doctor appointments.
 
 ---
 
-## Phase 2 — Synthetic Second Source
-**Goal:** Create realistic synthetic FHIR bundles representing a second health system ("Community Medical Center") to demonstrate multi-source aggregation.
+## Phase Overview
 
-### 2.1 — Synthetic Data Design
-Design data that creates interesting cross-system scenarios:
-- Medications that **interact** with Epic-prescribed meds
-- Lab results that Epic doesn't have (outside lab)
-- A specialist visit with notes the PCP never saw
-- An allergy not recorded in Epic
-- Different/additional conditions
+| Phase | Name | Status |
+|-------|------|--------|
+| 0 | Foundation | **DONE** |
+| 1 | Epic Live Data Fetch | Not started |
+| 2 | Synthetic Second Source | Not started |
+| 3 | Multi-Source Merge Engine | Not started |
+| 4 | Core UI Shell | Not started |
+| 5 | AI Analysis Engine (Tiered) | Not started |
+| 6 | AI-Powered Dashboard & Views | Not started |
+| 7 | Pre-Visit Report Generator | Not started |
+| 8 | Polish & Production Readiness | Not started |
 
-### 2.2 — Synthetic FHIR Bundles
-Create hand-crafted FHIR R4 bundles:
-- `src/data/synthetic/communityMC/medications.ts`
-- `src/data/synthetic/communityMC/labResults.ts`
-- `src/data/synthetic/communityMC/conditions.ts`
-- `src/data/synthetic/communityMC/allergies.ts`
-- `src/data/synthetic/communityMC/encounters.ts`
-- `src/data/synthetic/communityMC/immunizations.ts`
-
-### 2.3 — Synthetic Source Provider
-Create `src/sources/syntheticSource.ts`:
-- Loads bundles, parses through same parsers as Epic data
-- Applies `source: "Community Medical Center"` tag
-- Returns same typed arrays as Epic source
-- Simulates 500ms network delay for realistic UX
-
-### 2.4 — Patient Identity Match
-Create `src/sources/patientMatcher.ts`:
-- Match synthetic patient to Epic patient by name + DOB
-- For demo: exact match (we control the synthetic data)
-- Design interface for future probabilistic matching
-
-**Deliverable:** Synthetic second-source data that parses through the same pipeline and carries its own source tag.
-
----
-
-## Phase 3 — Multi-Source Merge Engine
-**Goal:** Combine data from both sources into a unified, deduplicated view.
-
-### 3.1 — Merge Engine
-Create `src/sources/mergeEngine.ts`:
-- Takes arrays from N sources → produces unified sorted arrays
-- Deduplication logic per domain:
-  - **Medications:** Match by drug name/RxNorm code → merge, flag conflicts
-  - **Labs:** Match by LOINC code + date → merge if same, keep if different
-  - **Conditions:** Match by SNOMED code → merge, note which systems report it
-  - **Allergies:** Match by substance → merge
-  - **Immunizations:** Match by CVX code + date range
-  - **Encounters:** No dedup needed — each visit is unique
-
-### 3.2 — Conflict Detection
-Create `src/sources/conflictDetector.ts`:
-- Flag when same medication appears with different doses across sources
-- Flag when one source says "allergy to X" and another prescribes X
-- Flag contradictory conditions
-- Return structured `Conflict[]` array
-
-### 3.3 — Unified Data Hook
-Create `src/hooks/useUnifiedData.ts`:
-- Orchestrates: useEpicData + syntheticSource + mergeEngine
-- Returns merged data arrays + conflicts + per-source metadata
-- Single loading state, unified error handling
-
-**Deliverable:** One unified data model combining both sources with dedup and conflict detection.
-
----
-
-## Phase 4 — Core UI Shell
-**Goal:** Build the persistent app layout with source-aware components.
-
-### 4.1 — Layout Components
-- `src/components/layout/AppShell.tsx` — Persistent layout (Outlet pattern)
-- `src/components/layout/Sidebar.tsx` — Navigation sidebar
-- `src/components/layout/Header.tsx` — Top header with patient info
-- `src/components/patient/PatientBanner.tsx` — Compact patient demographics
-
-### 4.2 — Source Badge Component
-- `src/components/ui/SourceBadge.tsx` — Shows "Epic" or "Community MC" on data items
-- Color-coded per source system
-- Consistent across all data views
-
-### 4.3 — Page Scaffold
-Create minimal page components (content filled in later phases):
-- Dashboard (AI Insights home)
-- Unified Timeline
-- Medications (cross-system view)
-- Lab Results (cross-system trending)
-- Conditions
-- Allergies
-- AI Insights detail page
-
-### 4.4 — App.tsx Routing
-Wire all pages into the layout route with persistent shell.
-
-**Deliverable:** Working app shell with navigation, patient banner, source badges, and page routing.
-
----
-
-## Phase 5 — Cross-System Data Views
-**Goal:** Build rich UI for viewing unified health data with source attribution.
-
-### 5.1 — Unified Timeline Page
-- Chronological view of ALL encounters from ALL sources
-- Source badge on each entry
-- Filter by source, date range, encounter type
-- Click to expand encounter details
-
-### 5.2 — Medications View
-- Combined medication list with source badges
-- Highlight medications unique to one source (cross-prescriber blind spots)
-- Drug interaction warnings (from conflict detector)
-- Group by active/inactive
-
-### 5.3 — Lab Results View
-- Cross-source lab results with trending
-- Sparkline charts showing values over time from all sources
-- Abnormal flags with reference ranges
-- Source badge on each result
-
-### 5.4 — Conditions, Allergies, Immunizations
-- Unified list views with source attribution
-- Highlight items found in only one source (potential data gaps)
-
-**Deliverable:** Full data browsing experience across all domains with source attribution.
-
----
-
-## Phase 6 — AI Analysis Engine
-**Goal:** Feed unified FHIR data to an LLM to generate actionable health insights.
-
-### 6.1 — AI Service Layer
-Create `src/ai/aiService.ts`:
-- Configurable LLM backend (OpenAI / Claude / Azure OpenAI)
-- API key management via `.env.local` (`VITE_AI_API_KEY`)
-- Structured prompt templates per analysis type
-- Response parsing + error handling
-- Rate limiting
-
-### 6.2 — Lab Trend Narrative
-Create `src/ai/labTrendAnalysis.ts`:
-- Input: All Observations sorted by date + patient demographics
-- Output: Plain-language narrative ("Your A1c has risen from 6.1 to 7.2 over 14 months...")
-- Source attribution: which lab from which system
-
-### 6.3 — Drug Interaction Analysis
-Create `src/ai/drugInteractionAnalysis.ts`:
-- Input: All active MedicationRequests from all sources
-- Cross-reference with NLM RxNorm API (optional) + LLM analysis
-- Output: Interaction alerts with severity + what to discuss with doctor
-
-### 6.4 — Care Gap Detection
-Create `src/ai/careGapDetection.ts`:
-- Input: Conditions + Immunizations + Demographics + Encounters
-- Cross-reference against USPSTF preventive care guidelines
-- Output: Overdue screenings, missing immunizations, missed follow-ups
-
-### 6.5 — Plain-Language Explainer
-Create `src/ai/healthExplainer.ts`:
-- "What does this mean?" for any FHIR resource
-- Input: A lab result, medication, or condition
-- Output: Patient-friendly explanation (6th-grade reading level)
-
-### 6.6 — AI Guardrails
-Every AI response includes:
-- "Not medical advice" disclaimer
-- Source attribution back to actual FHIR resources
-- Confidence framing ("commonly associated with..." not "you have...")
-- "Discuss with your provider" action routing
-- Model transparency (which AI generated this)
-
-**Deliverable:** AI analysis engine with lab trends, drug interactions, care gaps, and explainers — all with trust guardrails.
-
----
-
-## Phase 7 — AI-Powered Dashboard
-**Goal:** Dashboard that surfaces the top AI insights front-and-center.
-
-### 7.1 — AI Insights Panel
-- Top 3-5 AI findings displayed on the dashboard
-- Priority-ranked: drug interactions > care gaps > trends > info
-- Each insight is expandable with full explanation
-- "Discuss with your doctor" action on each
-
-### 7.2 — "Ask About This" Button
-- Available on any data item across the app
-- Sends the FHIR resource to the AI explainer
-- Returns a patient-friendly explanation in a slide-out panel
-
-### 7.3 — Cross-Source Summary Cards
-- Per-domain summary showing record counts from each source
-- "Found in Epic only" / "Found in both systems" indicators
-- Quick visual of where data lives
-
-### 7.4 — Alert Banner
-- Critical AI findings (drug interactions, expired screenings) shown as persistent alert at the top
-- Color-coded severity (red/amber/yellow)
-
-**Deliverable:** AI-powered home screen that proactively surfaces health insights.
-
----
-
-## Phase 8 — Pre-Visit Report Generator
-**Goal:** Generate a shareable summary patients can bring to their doctor appointment.
-
-### 8.1 — Report Content
-AI-generated one-pager including:
-- Patient demographics
-- Recent health changes since last visit
-- Current medications (from all sources)
-- Abnormal lab trends with charts
-- Active conditions
-- AI-flagged concerns (interactions, gaps)
-- Suggested questions to ask the doctor
-
-### 8.2 — Report Generation
-Create `src/ai/preVisitReport.ts`:
-- Assembles all data + AI insights into a structured report
-- LLM generates the narrative summary sections
-- Charts rendered as images for the PDF
-
-### 8.3 — Export Options
-- **PDF download** (via html2canvas + jsPDF or react-pdf)
-- **Print-friendly page** (CSS print styles)
-- **Share link** (optional — generates a temporary shareable URL)
-
-**Deliverable:** One-click pre-visit report with AI narrative, data summary, and suggested questions.
-
----
-
-## Phase 9 — Polish & Production Readiness
-**Goal:** Final polish, accessibility, performance, and documentation.
-
-### 9.1 — Accessibility Audit
-- WCAG 2.1 AA compliance verification
-- Screen reader testing
-- Keyboard navigation for all interactive elements
-- Color contrast verification
-
-### 9.2 — Performance Optimization
-- Lazy loading for non-critical pages
-- AI response caching (avoid re-analyzing same data)
-- Skeleton loading states for all async operations
-
-### 9.3 — Error Resilience
-- Graceful fallback when AI API is unavailable (show data without AI insights)
-- Offline indicator
-- Retry logic with exponential backoff
-
-### 9.4 — Documentation
-- README with setup instructions
-- Architecture diagram
-- AI prompt templates documentation
-- HIPAA considerations for production deployment
+> Detailed plans for each phase are in `plans/phase-N/README.md`
 
 ---
 
 ## Architecture Diagram
 
 ```
-┌─────────────────────────────────────────────────┐
-│                   SmartHealthAI                  │
-├─────────────────────────────────────────────────┤
-│                                                 │
-│  ┌──────────────┐    ┌──────────────────────┐  │
-│  │ Epic FHIR    │    │ Synthetic Source      │  │
-│  │ (Live OAuth) │    │ (Community MC Bundles)│  │
-│  └──────┬───────┘    └──────────┬───────────┘  │
-│         │                       │               │
-│         ▼                       ▼               │
-│  ┌──────────────────────────────────────────┐  │
-│  │         Multi-Source Merge Engine         │  │
-│  │  (Normalize → Dedup → Tag → Conflicts)   │  │
-│  └──────────────────┬───────────────────────┘  │
-│                     │                           │
-│         ┌───────────┼───────────┐               │
-│         ▼           ▼           ▼               │
-│  ┌───────────┐ ┌─────────┐ ┌─────────────┐    │
-│  │ Unified   │ │ Conflict│ │ Source       │    │
-│  │ Data      │ │ Alerts  │ │ Metadata    │    │
-│  └─────┬─────┘ └────┬────┘ └──────┬──────┘    │
-│        │             │             │            │
-│        ▼             ▼             ▼            │
-│  ┌──────────────────────────────────────────┐  │
-│  │           AI Analysis Engine              │  │
-│  │  Lab Trends │ Drug Interactions │ Gaps   │  │
-│  │  Explainer  │ Pre-Visit Report           │  │
-│  └──────────────────┬───────────────────────┘  │
-│                     │                           │
-│                     ▼                           │
-│  ┌──────────────────────────────────────────┐  │
-│  │              React UI Layer               │  │
-│  │  Dashboard │ Timeline │ Source-Tagged     │  │
-│  │  AI Insights │ Pre-Visit PDF │ "Ask AI"  │  │
-│  └──────────────────────────────────────────┘  │
-│                                                 │
-└─────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────┐
+│                    SmartHealthAI                     │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│  ┌──────────────┐    ┌────────────────────────┐    │
+│  │ Epic FHIR    │    │ Synthetic Source        │    │
+│  │ (Live OAuth) │    │ (Community MC Bundles)  │    │
+│  └──────┬───────┘    └──────────┬─────────────┘    │
+│         │                       │                   │
+│         ▼                       ▼                   │
+│  ┌──────────────────────────────────────────────┐  │
+│  │          Multi-Source Merge Engine            │  │
+│  │   (Normalize → Dedup → Tag → Conflicts)      │  │
+│  └──────────────────┬───────────────────────────┘  │
+│                     │                               │
+│         ┌───────────┼───────────┐                   │
+│         ▼           ▼           ▼                   │
+│  ┌───────────┐ ┌─────────┐ ┌─────────────┐        │
+│  │ Unified   │ │ Conflict│ │ Source       │        │
+│  │ Data      │ │ Alerts  │ │ Metadata    │        │
+│  └─────┬─────┘ └────┬────┘ └──────┬──────┘        │
+│        │             │             │                │
+│        ▼             ▼             ▼                │
+│  ┌──────────────────────────────────────────────┐  │
+│  │        Tiered AI Analysis Engine              │  │
+│  │  Tier 1: Rules (free) │ Tier 2: Cached LLM  │  │
+│  │  Tier 3: On-Demand LLM                       │  │
+│  │  ─────────────────────────────────────────   │  │
+│  │  Lab Trends │ Drug Interactions │ Care Gaps  │  │
+│  │  Vital Correlations │ Explainer │ Pre-Visit  │  │
+│  └──────────────────┬───────────────────────────┘  │
+│                     │                               │
+│                     ▼                               │
+│  ┌──────────────────────────────────────────────┐  │
+│  │              React UI Layer (4 Views)         │  │
+│  │  AI Dashboard │ Medications │ Labs & Trends  │  │
+│  │  Pre-Visit Report │ "Ask AI" on any item     │  │
+│  └──────────────────────────────────────────────┘  │
+│                                                     │
+└─────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -392,9 +123,9 @@ Create `src/ai/preVisitReport.ts`:
 | Frontend | React 19 + TypeScript 5.9 + Vite 7 |
 | Styling | Tailwind CSS v4 |
 | Routing | react-router-dom v7 |
-| Charts | Recharts v3 |
+| Charts | Recharts v3 (sparingly — lab trends + vital correlations only) |
 | FHIR | fhirclient v2.6 (SMART on FHIR) |
-| AI | OpenAI API / Claude API / Azure OpenAI (configurable) |
+| AI | OpenAI API (gpt-4o-mini primary, gpt-4o for reports) |
 | PDF | html2canvas + jsPDF (or react-pdf) |
 | Auth | OAuth2 PKCE (Epic sandbox) |
 
@@ -402,9 +133,12 @@ Create `src/ai/preVisitReport.ts`:
 
 ## Key Design Decisions
 
-1. **Fresh workspace, not forked** — Only 5 auth/FHIR files ported; everything else purpose-built for multi-source
-2. **Same parsers for all sources** — Real Epic data and synthetic data flow through identical parsing pipeline
-3. **Source tagging from the start** — Every record carries provenance metadata
-4. **AI as enhancement, not requirement** — App works without AI (shows data); AI adds interpretation layer
-5. **Guardrails are non-negotiable** — Every AI insight has disclaimer, source citation, and provider routing
-6. **Sandbox-friendly architecture** — One live FHIR connection + synthetic bundles = full demo without needing multiple live EHR connections
+1. **Think, don't list** — No standalone pages for conditions, allergies, immunizations, vitals, insurance, claims, documents. They feed the AI, not the sidebar.
+2. **4 views, not 10** — AI Dashboard, Medications, Labs & Trends, Pre-Visit Report. Every view tells an AI story.
+3. **Vitals = AI fuel** — BP/weight/HR cross-referenced with meds and conditions to generate correlation insights. No standalone vitals charts.
+4. **Tiered AI cost control** — Rule-based ($0) → Cached LLM (pay once) → On-demand LLM (pay per click). ~$0.05 first demo, ~$0.00 repeats.
+5. **Same parsers for all sources** — Real Epic data and synthetic data flow through identical parsing pipeline.
+6. **Source tagging from the start** — Every record carries provenance metadata.
+7. **AI as enhancement, not requirement** — App works without AI (shows data); AI adds interpretation layer.
+8. **Guardrails are non-negotiable** — Every AI insight has disclaimer, source citation, and provider routing.
+9. **Sandbox-friendly architecture** — One live FHIR connection + synthetic bundles = full demo without needing multiple live EHR connections.
