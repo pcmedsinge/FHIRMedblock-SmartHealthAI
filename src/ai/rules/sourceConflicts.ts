@@ -27,11 +27,10 @@ const CONFLICT_TEMPLATES: Record<Conflict["type"], ConflictTemplate> = {
   "dose-mismatch": {
     titleTemplate: (c) => {
       const drugName = c.resources[0]?.display ?? "A medication";
-      return `Different Doses: ${drugName}`;
+      return `${drugName} — Different Doses at ${c.sourceA.systemName} and ${c.sourceB.systemName}`;
     },
     explanationTemplate: (c) => {
-      const sources = [c.sourceA.systemName, c.sourceB.systemName].join(" and ");
-      return `${c.resources[0]?.display ?? "A medication"} appears with different dosage instructions in ${sources}. This could mean your doctors prescribed different amounts, or one record may be outdated.`;
+      return `${c.resources[0]?.display ?? "A medication"} appears with different dosage instructions at ${c.sourceA.systemName} and ${c.sourceB.systemName}. This could mean your doctors prescribed different amounts, or one record may be outdated.`;
     },
     actionTemplate: () =>
       "Bring this to your next appointment and ask your provider to confirm the correct dose.",
@@ -41,7 +40,7 @@ const CONFLICT_TEMPLATES: Record<Conflict["type"], ConflictTemplate> = {
     titleTemplate: (c) => {
       const allergy = c.resources.find((r) => r.resourceType === "Allergy");
       const med = c.resources.find((r) => r.resourceType === "Medication");
-      return `⚠️ Allergy Alert: ${allergy?.display ?? "Allergy"} vs ${med?.display ?? "Medication"}`;
+      return `Allergy to ${allergy?.display ?? "a substance"} — but ${med?.display ?? "a related medication"} was prescribed`;
     },
     explanationTemplate: (c) => {
       const allergyRes = c.resources.find((r) => r.resourceType === "Allergy");
@@ -54,8 +53,12 @@ const CONFLICT_TEMPLATES: Record<Conflict["type"], ConflictTemplate> = {
 
   "missing-crossref": {
     titleTemplate: (c) => {
-      const item = c.resources[0]?.display ?? "A record";
-      return `Missing From Other System: ${item}`;
+      const item = c.resources[0];
+      const sourceName = item?.source.systemName ?? "one provider";
+      const otherSource = item?.source.systemName === c.sourceA.systemName
+        ? c.sourceB.systemName
+        : c.sourceA.systemName;
+      return `${item?.display ?? "A record"} — only at ${sourceName}, not at ${otherSource}`;
     },
     explanationTemplate: (c) => {
       const item = c.resources[0];
@@ -72,7 +75,7 @@ const CONFLICT_TEMPLATES: Record<Conflict["type"], ConflictTemplate> = {
   "contradictory-condition": {
     titleTemplate: (c) => {
       const condition = c.resources[0]?.display ?? "A condition";
-      return `Condition Status Conflict: ${condition}`;
+      return `${condition} — different status at ${c.sourceA.systemName} vs ${c.sourceB.systemName}`;
     },
     explanationTemplate: (c) => {
       return `${c.resources[0]?.display ?? "A condition"} is recorded as active by ${c.sourceA.systemName} but may have a different status in ${c.sourceB.systemName}. Your providers may have different assessments of this condition.`;
@@ -82,7 +85,9 @@ const CONFLICT_TEMPLATES: Record<Conflict["type"], ConflictTemplate> = {
   },
 
   "allergy-gap": {
-    titleTemplate: (_c) => "⚠️ Missing Allergy Records",
+    titleTemplate: (c) => {
+      return `Allergies missing at ${c.sourceB.systemName} — ${c.sourceA.systemName} has them on file`;
+    },
     explanationTemplate: (c) => {
       return `${c.sourceA.systemName} has allergy information on file, but ${c.sourceB.systemName} has no allergy records. This is a significant safety gap — providers using ${c.sourceB.systemName} may not know about your allergies.`;
     },

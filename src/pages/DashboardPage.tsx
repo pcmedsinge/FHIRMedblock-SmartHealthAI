@@ -34,6 +34,8 @@ import {
   CheckCircle2,
   FileDown,
   ClipboardList,
+  ChevronRight,
+  Zap,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -67,6 +69,7 @@ const QUICK_NAV = [
 interface RichAlertItem {
   id: string;
   type: "conflict" | "interaction";
+  category: "allergy" | "medication" | "record-gap" | "condition";
   severity: "urgent" | "important" | "note";
   title: string;
   explanation: string;
@@ -74,6 +77,14 @@ interface RichAlertItem {
   clinicalDetails?: string;
   relatedResources: ConflictResource[];
 }
+
+/** Category display config */
+const CATEGORY_CONFIG: Record<RichAlertItem["category"], { label: string; icon: React.ElementType; color: string; bg: string; border: string }> = {
+  allergy:     { label: "Allergy Alerts",     icon: AlertTriangle, color: "text-red-700",    bg: "bg-red-50",    border: "border-red-200" },
+  medication:  { label: "Medication Alerts",   icon: Pill,          color: "text-blue-700",   bg: "bg-blue-50",   border: "border-blue-200" },
+  "record-gap": { label: "Record Gaps",       icon: ShieldAlert,   color: "text-amber-700",  bg: "bg-amber-50",  border: "border-amber-200" },
+  condition:   { label: "Condition Alerts",    icon: Heart,         color: "text-rose-700",   bg: "bg-rose-50",   border: "border-rose-200" },
+};
 
 // -----------------------------------------------------------
 // Component
@@ -98,12 +109,28 @@ const DashboardPage = () => {
   const alertItems = useMemo<RichAlertItem[]>(() => {
     const items: RichAlertItem[] = [];
 
+    // Map conflict types to UI categories
+    const conflictTypeToCategory = (type: string): RichAlertItem["category"] => {
+      switch (type) {
+        case "allergy-prescription":
+        case "allergy-gap":
+          return "allergy";
+        case "dose-mismatch":
+          return "medication";
+        case "contradictory-condition":
+          return "condition";
+        default:
+          return "record-gap";
+      }
+    };
+
     if (ai.tier1) {
       for (const alert of ai.tier1.sourceConflictAlerts) {
         const fullConflict = conflictMap.get(alert.conflictId);
         items.push({
           id: alert.conflictId,
           type: "conflict",
+          category: conflictTypeToCategory(fullConflict?.type ?? "missing-crossref"),
           severity:
             alert.severity === "critical"
               ? "urgent"
@@ -121,6 +148,7 @@ const DashboardPage = () => {
         items.push({
           id: d.id,
           type: "interaction",
+          category: "medication",
           severity: d.severity === "critical" ? "urgent" : "important",
           title: `${d.drugA} + ${d.drugB}: ${d.effect}`,
           explanation: d.description,
@@ -143,6 +171,17 @@ const DashboardPage = () => {
     () => [...alertItems].sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9)),
     [alertItems]
   );
+
+  // Group sorted alerts by category (preserving severity order within each group)
+  const CATEGORY_ORDER: RichAlertItem["category"][] = ["allergy", "medication", "condition", "record-gap"];
+  const groupedAlerts = useMemo(() => {
+    const groups: Array<{ category: RichAlertItem["category"]; items: RichAlertItem[] }> = [];
+    for (const cat of CATEGORY_ORDER) {
+      const items = sortedAlertItems.filter((a) => a.category === cat);
+      if (items.length > 0) groups.push({ category: cat, items });
+    }
+    return groups;
+  }, [sortedAlertItems]);
 
   const attentionCount = sortedAlertItems.length;
 
@@ -233,144 +272,178 @@ const DashboardPage = () => {
           {/* Rich overlay dropdown — doesn't push content */}
           {alertsExpanded && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-2xl border border-slate-200 shadow-xl z-20 flex flex-col" style={{ maxHeight: "calc(100vh - 240px)" }}>
-              <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-slate-100">
-                {sortedAlertItems.map((item) => {
-                  const isItemExpanded = expandedAlertId === item.id;
-                  const isClinicalVisible = showClinicalFor === item.id;
+              <div className="flex-1 min-h-0 overflow-y-auto">
+                {groupedAlerts.map(({ category, items }) => {
+                  const catConfig = CATEGORY_CONFIG[category];
+                  const CatIcon = catConfig.icon;
 
                   return (
-                    <div key={item.id}>
-                      {/* Collapsed row — title + severity + expand */}
-                      <button
-                        onClick={() =>
-                          setExpandedAlertId(
-                            isItemExpanded ? null : item.id
-                          )
-                        }
-                        className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-slate-50 transition-colors"
-                      >
-                        <div
-                          className={`w-3 h-3 rounded-full shrink-0 ${
-                            item.severity === "urgent"
-                              ? "bg-red-500"
-                              : item.severity === "important"
-                                ? "bg-amber-500"
-                                : "bg-slate-400"
-                          }`}
-                        />
-                        <span className="flex-1 text-[15px] font-medium text-slate-900 text-left">
-                          {item.title}
+                    <div key={category}>
+                      {/* Category header */}
+                      <div className={`sticky top-0 z-10 flex items-center gap-2 px-5 py-2.5 ${catConfig.bg} border-b ${catConfig.border}`}>
+                        <CatIcon className={`w-4 h-4 ${catConfig.color}`} />
+                        <span className={`text-sm font-bold uppercase tracking-wide ${catConfig.color}`}>
+                          {catConfig.label}
                         </span>
-                        <span
-                          className={`text-xs font-bold px-2.5 py-1 rounded-lg shrink-0 ${
-                            item.severity === "urgent"
-                              ? "bg-red-100 text-red-700"
-                              : item.severity === "important"
-                                ? "bg-amber-100 text-amber-700"
-                                : "bg-slate-100 text-slate-600"
-                          }`}
-                        >
-                          {item.severity.toUpperCase()}
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${catConfig.bg} ${catConfig.color} border ${catConfig.border}`}>
+                          {items.length}
                         </span>
-                        {isItemExpanded ? (
-                          <ChevronUp className="w-4 h-4 text-slate-400 shrink-0" />
-                        ) : (
-                          <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
-                        )}
-                      </button>
+                      </div>
 
-                      {/* Expanded detail panel */}
-                      {isItemExpanded && (
-                        <div className="px-5 pb-4 space-y-3">
-                          {/* WHAT THIS MEANS */}
-                          <div>
-                            <div className="text-xs font-bold text-red-600 uppercase tracking-wide mb-1">
-                              What This Means
-                            </div>
-                            <p className="text-sm text-slate-700 leading-relaxed">
-                              {item.explanation}
-                            </p>
-                          </div>
+                      {/* Alert items within this category */}
+                      <div className="divide-y divide-slate-100">
+                        {items.map((item) => {
+                          const isItemExpanded = expandedAlertId === item.id;
+                          const isClinicalVisible = showClinicalFor === item.id;
 
-                          {/* RECOMMENDED ACTION */}
-                          <div className="bg-emerald-50 rounded-xl px-4 py-3 flex items-start gap-2.5">
-                            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                            <div>
-                              <div className="text-xs font-bold text-emerald-700 uppercase tracking-wide mb-0.5">
-                                Recommended Action
-                              </div>
-                              <p className="text-sm text-emerald-900 leading-relaxed">
-                                {item.actionItem}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* CLINICAL DETAILS toggle */}
-                          {item.clinicalDetails && (
-                            <div>
+                          return (
+                            <div key={item.id}>
+                              {/* Collapsed row — click to expand */}
                               <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setShowClinicalFor(
-                                    isClinicalVisible ? null : item.id
-                                  );
-                                }}
-                                className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 transition-colors"
+                                onClick={() =>
+                                  setExpandedAlertId(isItemExpanded ? null : item.id)
+                                }
+                                className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-slate-50 transition-colors group"
                               >
-                                <ClipboardList className="w-4 h-4" />
-                                {isClinicalVisible
-                                  ? "Hide clinical details"
-                                  : "Show clinical details"}
-                                {isClinicalVisible ? (
-                                  <ChevronUp className="w-3 h-3" />
-                                ) : (
-                                  <ChevronDown className="w-3 h-3" />
-                                )}
+                                {/* Severity dot */}
+                                <div
+                                  className={`w-3 h-3 rounded-full shrink-0 ring-2 ring-offset-1 ${
+                                    item.severity === "urgent"
+                                      ? "bg-red-500 ring-red-200"
+                                      : item.severity === "important"
+                                        ? "bg-amber-500 ring-amber-200"
+                                        : "bg-slate-400 ring-slate-200"
+                                  }`}
+                                />
+
+                                {/* Title */}
+                                <span className="flex-1 text-[15px] font-semibold text-slate-900 text-left leading-snug">
+                                  {item.title}
+                                </span>
+
+                                {/* Severity badge */}
+                                <span
+                                  className={`text-xs font-extrabold px-3 py-1.5 rounded-lg shrink-0 ${
+                                    item.severity === "urgent"
+                                      ? "bg-red-100 text-red-800 border border-red-300"
+                                      : item.severity === "important"
+                                        ? "bg-amber-100 text-amber-800 border border-amber-300"
+                                        : "bg-slate-100 text-slate-700 border border-slate-300"
+                                  }`}
+                                >
+                                  {item.severity === "urgent" ? "URGENT" : item.severity === "important" ? "IMPORTANT" : "INFO"}
+                                </span>
+
+                                {/* Expand/collapse — prominent styled button */}
+                                <div
+                                  className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all ${
+                                    isItemExpanded
+                                      ? "bg-slate-200 text-slate-700"
+                                      : "bg-slate-100 text-slate-500 group-hover:bg-emerald-100 group-hover:text-emerald-700"
+                                  }`}
+                                >
+                                  {isItemExpanded ? (
+                                    <ChevronUp className="w-5 h-5" strokeWidth={2.5} />
+                                  ) : (
+                                    <ChevronDown className="w-5 h-5" strokeWidth={2.5} />
+                                  )}
+                                </div>
                               </button>
 
-                              {isClinicalVisible && (
-                                <div className="mt-2 bg-slate-50 rounded-xl border border-slate-200 p-4 space-y-3">
-                                  <div>
-                                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">
-                                      Clinical Details
+                              {/* Expanded detail panel */}
+                              {isItemExpanded && (
+                                <div className="px-5 pb-5 space-y-4 ml-6 border-l-2 border-slate-200">
+                                  {/* WHAT THIS MEANS */}
+                                  <div className="bg-red-50/80 rounded-xl px-4 py-3 border border-red-100">
+                                    <div className="flex items-center gap-1.5 mb-1.5">
+                                      <Zap className="w-4 h-4 text-red-600" />
+                                      <span className="text-xs font-extrabold text-red-700 uppercase tracking-wider">
+                                        What This Means
+                                      </span>
                                     </div>
-                                    <p className="text-sm text-slate-700 leading-relaxed">
-                                      {item.clinicalDetails}
+                                    <p className="text-[14px] font-medium text-slate-800 leading-relaxed">
+                                      {item.explanation}
                                     </p>
                                   </div>
 
-                                  {/* RELATED RECORDS */}
-                                  {item.relatedResources.length > 0 && (
+                                  {/* RECOMMENDED ACTION */}
+                                  <div className="bg-emerald-50 rounded-xl px-4 py-3 flex items-start gap-2.5 border border-emerald-200">
+                                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
                                     <div>
-                                      <div className="text-xs font-bold text-red-500 uppercase tracking-wide mb-1.5">
-                                        Related Records
+                                      <div className="text-xs font-extrabold text-emerald-700 uppercase tracking-wider mb-1">
+                                        Recommended Action
                                       </div>
-                                      <div className="space-y-1.5">
-                                        {item.relatedResources.map((r) => (
-                                          <div
-                                            key={r.resourceId}
-                                            className="flex items-center gap-2 text-sm"
-                                          >
-                                            <div className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                                            <span className="font-medium text-slate-800">
-                                              {r.display}
-                                            </span>
-                                            <span className="text-slate-400">|</span>
-                                            <SourceBadge
-                                              source={r.source}
-                                              compact
-                                            />
+                                      <p className="text-[14px] font-medium text-emerald-900 leading-relaxed">
+                                        {item.actionItem}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  {/* CLINICAL DETAILS toggle — prominent button */}
+                                  {item.clinicalDetails && (
+                                    <div>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setShowClinicalFor(isClinicalVisible ? null : item.id);
+                                        }}
+                                        className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all border ${
+                                          isClinicalVisible
+                                            ? "bg-slate-700 text-white border-slate-700 shadow-md"
+                                            : "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 hover:border-slate-400"
+                                        }`}
+                                      >
+                                        <ClipboardList className="w-4 h-4" />
+                                        {isClinicalVisible ? "Hide Clinical Details" : "Show Clinical Details"}
+                                        <ChevronRight
+                                          className={`w-4 h-4 transition-transform ${isClinicalVisible ? "rotate-90" : ""}`}
+                                        />
+                                      </button>
+
+                                      {isClinicalVisible && (
+                                        <div className="mt-3 bg-slate-50 rounded-xl border-2 border-slate-300 p-4 space-y-4">
+                                          <div>
+                                            <div className="text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-2">
+                                              Clinical Details
+                                            </div>
+                                            <p className="text-[14px] font-medium text-slate-800 leading-relaxed">
+                                              {item.clinicalDetails}
+                                            </p>
                                           </div>
-                                        ))}
-                                      </div>
+
+                                          {/* RELATED RECORDS */}
+                                          {item.relatedResources.length > 0 && (
+                                            <div>
+                                              <div className="text-xs font-extrabold text-red-600 uppercase tracking-wider mb-2">
+                                                Related Records
+                                              </div>
+                                              <div className="space-y-2">
+                                                {item.relatedResources.map((r) => (
+                                                  <div
+                                                    key={r.resourceId}
+                                                    className="flex items-center gap-2.5 text-sm bg-white rounded-lg px-3 py-2 border border-slate-200"
+                                                  >
+                                                    <div className="w-2 h-2 rounded-full bg-red-400 shrink-0" />
+                                                    <span className="font-semibold text-slate-900">
+                                                      {r.display}
+                                                    </span>
+                                                    <span className="text-slate-300">|</span>
+                                                    <SourceBadge source={r.source} compact />
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
                                     </div>
                                   )}
                                 </div>
                               )}
                             </div>
-                          )}
-                        </div>
-                      )}
+                          );
+                        })}
+                      </div>
                     </div>
                   );
                 })}
