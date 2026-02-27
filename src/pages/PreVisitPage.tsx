@@ -282,6 +282,9 @@ const PreVisitPage = () => {
 
   const displayQuestions = narrative?.questions ?? fallbackQuestions;
 
+  // Helpers
+  const fmtDate = (d?: string) => d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "";
+
   // Copy to clipboard
   const handleCopy = useCallback(async () => {
     if (!report) return;
@@ -323,8 +326,8 @@ const PreVisitPage = () => {
         <div className="flex items-center gap-2">
           <FileText className="w-5 h-5 text-emerald-600" />
           <h1 className="text-lg font-bold text-slate-900">Pre-Visit Report</h1>
-          <span className="text-xs text-slate-400">
-            {report.patient.firstName} {report.patient.lastName} · {report.dataSources.length} provider{report.dataSources.length !== 1 ? "s" : ""} · {new Date(report.generatedAt).toLocaleDateString()}
+          <span className="text-sm text-slate-600 font-medium">
+            {report.patient.firstName} {report.patient.lastName} · {report.dataSources.length} provider{report.dataSources.length !== 1 ? "s" : ""} · {new Date(report.generatedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
           </span>
         </div>
         <div className="flex items-center gap-1.5">
@@ -363,10 +366,9 @@ const PreVisitPage = () => {
             <Brain className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 mb-1">
-                <span className="text-[11px] font-bold text-emerald-800">AI Health Summary</span>
-                <span className="text-[9px] text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded-full">{narrative.model}</span>
+                <span className="text-xs font-bold text-emerald-800">AI Health Summary</span>
               </div>
-              <p className="text-[11px] text-slate-700 leading-relaxed line-clamp-3">{narrative.narrative}</p>
+              <p className="text-xs text-slate-700 leading-relaxed line-clamp-3">{narrative.narrative}</p>
             </div>
           </div>
         </div>
@@ -379,12 +381,12 @@ const PreVisitPage = () => {
       <div className="flex-1 min-h-0 grid grid-cols-3 gap-3">
 
         {/* ── COLUMN 1: Medications ── */}
-        <div className="flex flex-col min-h-0 overflow-y-auto pr-1">
+        <div className="flex flex-col min-h-0 overflow-y-auto scrollbar-hide pr-1">
           {/* Section: Medications */}
           <div className="flex items-center gap-1.5 mb-1.5 sticky top-0 bg-slate-50/95 backdrop-blur-sm py-1 -mx-0.5 px-0.5 z-10">
             <Pill className="w-3.5 h-3.5 text-blue-600" />
-            <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wide">Medications</span>
-            <span className="text-[10px] text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded-full font-bold">{report.medications.active.length}</span>
+            <span className="text-xs font-bold text-slate-800 uppercase tracking-wide">Medications</span>
+            <span className="text-[11px] text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded-full font-bold">{report.medications.active.length}</span>
           </div>
           {report.medications.active.length === 0 ? (
             <p className="text-[11px] text-slate-400 italic">No active medications</p>
@@ -393,8 +395,8 @@ const PreVisitPage = () => {
               {report.medications.active.map((med) => (
                 <div key={med.id} className="flex items-start gap-1.5 py-1 border-b border-slate-100 last:border-0">
                   <div className="flex-1 min-w-0">
-                    <div className="text-[11px] font-semibold text-slate-900 leading-tight">{med.name}</div>
-                    <div className="text-[10px] text-slate-500 leading-tight">{med.dosageInstruction ?? "No dosage info"}</div>
+                    <div className="text-xs font-bold text-slate-900 leading-tight">{med.name}</div>
+                    <div className="text-[11px] text-slate-500 leading-tight">{med.dosageInstruction ?? "No dosage info"}</div>
                   </div>
                   <div className="flex items-center gap-0.5 shrink-0 mt-0.5">
                     {med.mergeStatus === "conflict" && <span className="text-[8px] px-1 py-0.5 rounded bg-red-100 text-red-700 font-bold">CONFLICT</span>}
@@ -409,10 +411,10 @@ const PreVisitPage = () => {
           {/* Drug interactions */}
           {report.medications.interactions.length > 0 && (
             <div className="mt-2 p-2 bg-red-50 rounded-lg border border-red-200">
-              <div className="text-[10px] font-bold text-red-700 uppercase tracking-wide mb-1">⚠ Interactions ({report.medications.interactions.length})</div>
+              <div className="text-[11px] font-bold text-red-700 uppercase tracking-wide mb-1">⚠ Drug Interactions ({report.medications.interactions.length})</div>
               {report.medications.interactions.map((di) => (
-                <div key={di.id} className="text-[11px] text-red-800 leading-tight mb-1 last:mb-0">
-                  <span className="font-bold">{di.drugA}</span> + <span className="font-bold">{di.drugB}</span>: {di.effect}
+                <div key={di.id} className="text-xs text-red-800 leading-snug mb-1.5 last:mb-0">
+                  Taking <span className="font-bold">{di.drugA}</span> with <span className="font-bold">{di.drugB}</span> may cause: <span className="font-semibold">{di.effect}</span>. Discuss with your provider.
                 </div>
               ))}
             </div>
@@ -423,11 +425,11 @@ const PreVisitPage = () => {
             <div className="mt-3">
               <div className="flex items-center gap-1.5 mb-1">
                 <Stethoscope className="w-3.5 h-3.5 text-indigo-600" />
-                <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wide">Effectiveness</span>
+                <span className="text-xs font-bold text-slate-800 uppercase tracking-wide">Meds & Vitals</span>
               </div>
               {report.vitalCorrelations.map((vc) => (
-                <div key={vc.id} className="text-[11px] text-slate-700 leading-tight mb-1">
-                  <span className="font-medium">{vc.vitalName} + {vc.medicationName}:</span> {vc.message}
+                <div key={vc.id} className="text-xs text-slate-700 leading-snug mb-1.5">
+                  <span className="font-bold text-slate-800">{vc.vitalName}</span> while taking <span className="font-bold text-slate-800">{vc.medicationName}</span>: {vc.message}
                 </div>
               ))}
             </div>
@@ -435,40 +437,40 @@ const PreVisitPage = () => {
         </div>
 
         {/* ── COLUMN 2: Safety + Labs ── */}
-        <div className="flex flex-col min-h-0 overflow-y-auto px-1">
+        <div className="flex flex-col min-h-0 overflow-y-auto scrollbar-hide px-1">
           {/* Section: Safety Alerts */}
           <div className="flex items-center gap-1.5 mb-1.5 sticky top-0 bg-slate-50/95 backdrop-blur-sm py-1 -mx-0.5 px-0.5 z-10">
             <ShieldAlert className="w-3.5 h-3.5 text-red-600" />
-            <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wide">Safety Alerts</span>
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${allAlerts.length > 0 ? "text-red-700 bg-red-100" : "text-emerald-700 bg-emerald-100"}`}>{allAlerts.length}</span>
+            <span className="text-xs font-bold text-slate-800 uppercase tracking-wide">Safety Alerts</span>
+            <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-bold ${allAlerts.length > 0 ? "text-red-700 bg-red-100" : "text-emerald-700 bg-emerald-100"}`}>{allAlerts.length}</span>
           </div>
           {allAlerts.length === 0 ? (
-            <p className="text-[11px] text-emerald-600 font-medium">✓ No safety concerns</p>
+            <p className="text-xs text-emerald-600 font-medium">✓ No safety concerns</p>
           ) : (
             <div className="space-y-1 mb-3">
-              {allAlerts.slice(0, 6).map((a) => (
+              {allAlerts.map((a) => (
                 <div key={a.id} className="py-1 border-b border-slate-100 last:border-0">
                   <div className="flex items-center gap-1 mb-0.5">
-                    <span className={`text-[8px] px-1 py-0.5 rounded font-bold uppercase ${a.severity === "critical" ? "bg-red-100 text-red-700" : a.severity === "high" ? "bg-amber-100 text-amber-700" : "bg-yellow-100 text-yellow-700"}`}>{a.severity}</span>
-                    <span className="text-[10px] text-slate-500 truncate">{a.category}</span>
+                    <span className={`text-[9px] px-1 py-0.5 rounded font-bold uppercase ${a.severity === "critical" ? "bg-red-100 text-red-700" : a.severity === "high" ? "bg-amber-100 text-amber-700" : "bg-yellow-100 text-yellow-700"}`}>{a.severity}</span>
+                    <span className="text-[11px] text-slate-500 truncate">{a.category}</span>
                   </div>
-                  <div className="text-[11px] text-slate-800 leading-tight font-medium">{a.title}</div>
-                  <div className="text-[10px] text-slate-500 leading-tight">{a.explanation}</div>
+                  <div className="text-xs text-slate-800 leading-tight font-bold">{a.title}</div>
+                  <div className="text-[11px] text-slate-500 leading-tight">{a.explanation}</div>
                 </div>
               ))}
-              {allAlerts.length > 6 && <p className="text-[10px] text-slate-400 italic">+{allAlerts.length - 6} more alerts</p>}
             </div>
           )}
 
           {/* Section: Abnormal Labs */}
-          <div className="flex items-center gap-1.5 mb-1.5 sticky top-0 bg-slate-50/95 backdrop-blur-sm py-1 -mx-0.5 px-0.5 z-10 mt-1">
+          <div className="flex items-center gap-1.5 mb-0.5 sticky top-0 bg-slate-50/95 backdrop-blur-sm py-1 -mx-0.5 px-0.5 z-10 mt-1">
             <TestTube className="w-3.5 h-3.5 text-emerald-600" />
-            <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wide">Abnormal Labs</span>
-            <span className="text-[10px] text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full font-bold">{report.labs.abnormal.length}</span>
+            <span className="text-xs font-bold text-slate-800 uppercase tracking-wide">Abnormal Labs</span>
+            <span className="text-[11px] text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full font-bold">{report.labs.abnormal.length}</span>
           </div>
+          <p className="text-[11px] text-slate-500 italic mb-1.5">Results outside normal range — discuss with your provider</p>
           {report.labs.trendSummaries.length > 0 && (
             <div className="p-1.5 bg-emerald-50 rounded border border-emerald-200 mb-1.5">
-              {report.labs.trendSummaries.slice(0, 2).map((t, i) => <p key={i} className="text-[10px] text-emerald-800 leading-tight">{t}</p>)}
+              {report.labs.trendSummaries.slice(0, 2).map((t, i) => <p key={i} className="text-[11px] text-emerald-800 leading-tight font-medium">{t}</p>)}
             </div>
           )}
           {report.labs.abnormal.length === 0 ? (
@@ -478,15 +480,22 @@ const PreVisitPage = () => {
               {report.labs.abnormal.map((lab) => (
                 <div key={lab.id} className="flex items-start gap-1 py-0.5 border-b border-slate-100 last:border-0">
                   <div className="flex-1 min-w-0">
-                    <div className="text-[11px] font-medium text-slate-900 leading-tight">{lab.name}</div>
-                    <div className="text-[10px] text-slate-500 leading-tight">
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs font-bold text-slate-900 leading-tight">{lab.name}</span>
+                      {lab.interpretation && lab.interpretation !== "normal" && (
+                        <span className={`text-[9px] px-1 py-0.5 rounded font-bold ${lab.interpretation.includes("critical") ? "bg-red-200 text-red-800" : lab.interpretation.includes("high") ? "bg-amber-100 text-amber-700" : lab.interpretation.includes("low") ? "bg-blue-100 text-blue-700" : "bg-yellow-100 text-yellow-700"}`}>
+                          {lab.interpretation.includes("high") ? "↑" : lab.interpretation.includes("low") ? "↓" : "!"} {lab.interpretation.toUpperCase().replace("-", " ")}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[11px] text-slate-500 leading-tight">
                       <span className="font-bold text-slate-700">{lab.value}</span> {lab.unit ?? ""}
                       {lab.referenceRange && (
-                        <span className="text-slate-400"> (ref: {typeof lab.referenceRange === "object" ? `${lab.referenceRange.low ?? "?"}–${lab.referenceRange.high ?? "?"}` : lab.referenceRange})</span>
+                        <span className="text-slate-400"> (normal: {typeof lab.referenceRange === "object" ? `${lab.referenceRange.low ?? "?"}–${lab.referenceRange.high ?? "?"}` : lab.referenceRange})</span>
                       )}
                     </div>
                   </div>
-                  <span className="text-[9px] text-slate-400 shrink-0 mt-0.5">{lab.effectiveDate ?? ""}</span>
+                  <span className="text-[10px] text-slate-400 shrink-0 mt-0.5">{fmtDate(lab.effectiveDate)}</span>
                 </div>
               ))}
             </div>
@@ -497,13 +506,13 @@ const PreVisitPage = () => {
             <div className="mt-3">
               <div className="flex items-center gap-1.5 mb-1">
                 <ClipboardList className="w-3.5 h-3.5 text-orange-600" />
-                <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wide">Overdue Care</span>
-                <span className="text-[10px] text-orange-700 bg-orange-100 px-1.5 py-0.5 rounded-full font-bold">{report.careGaps.overdue.length}</span>
+                <span className="text-xs font-bold text-slate-800 uppercase tracking-wide">Overdue Care</span>
+                <span className="text-[11px] text-orange-700 bg-orange-100 px-1.5 py-0.5 rounded-full font-bold">{report.careGaps.overdue.length}</span>
               </div>
               {report.careGaps.overdue.map((g) => (
-                <div key={g.id} className="text-[11px] text-slate-700 leading-tight mb-1">
-                  <span className={`text-[8px] px-1 py-0.5 rounded font-bold uppercase mr-1 ${g.priority === "high" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>{g.priority}</span>
-                  <span className="font-medium">{g.recommendation}</span> — {g.reason}
+                <div key={g.id} className="text-xs text-slate-700 leading-tight mb-1">
+                  <span className={`text-[9px] px-1 py-0.5 rounded font-bold uppercase mr-1 ${g.priority === "high" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>{g.priority}</span>
+                  <span className="font-bold">{g.recommendation}</span> — {g.reason}
                 </div>
               ))}
             </div>
@@ -511,22 +520,22 @@ const PreVisitPage = () => {
         </div>
 
         {/* ── COLUMN 3: Conditions + Allergies + Vaccines + Questions ── */}
-        <div className="flex flex-col min-h-0 overflow-y-auto pl-1">
+        <div className="flex flex-col min-h-0 overflow-y-auto scrollbar-hide pl-1">
           {/* Section: Conditions */}
           <div className="flex items-center gap-1.5 mb-1.5 sticky top-0 bg-slate-50/95 backdrop-blur-sm py-1 -mx-0.5 px-0.5 z-10">
             <Heart className="w-3.5 h-3.5 text-rose-600" />
-            <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wide">Conditions</span>
-            <span className="text-[10px] text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded-full font-bold">{report.conditions.length}</span>
+            <span className="text-xs font-bold text-slate-800 uppercase tracking-wide">Conditions</span>
+            <span className="text-[11px] text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded-full font-bold">{report.conditions.length}</span>
           </div>
           {report.conditions.length === 0 ? (
             <p className="text-[11px] text-slate-400 italic">None recorded</p>
           ) : (
             <div className="space-y-0.5 mb-3">
               {report.conditions.map((c) => (
-                <div key={c.id} className="flex items-center gap-1 py-0.5">
-                  <span className="text-[11px] font-medium text-slate-900">{c.name}</span>
-                  <span className="text-[9px] text-slate-400">since {c.onsetDate ?? "?"}</span>
-                  {c.allSources.map((s) => <SourceBadge key={s.systemId} source={s} compact />)}
+                <div key={c.id} className="flex items-center gap-1.5 py-0.5">
+                  <span className="text-xs font-bold text-slate-900">{c.name}</span>
+                  <span className="text-[10px] text-slate-400">since {c.onsetDate ? fmtDate(c.onsetDate) : "?"}</span>
+                  {c.allSources.length > 1 && <span className="text-[9px] text-emerald-600 font-medium">· {c.allSources.length} providers</span>}
                 </div>
               ))}
             </div>
@@ -535,18 +544,18 @@ const PreVisitPage = () => {
           {/* Section: Allergies */}
           <div className="flex items-center gap-1.5 mb-1.5 sticky top-0 bg-slate-50/95 backdrop-blur-sm py-1 -mx-0.5 px-0.5 z-10">
             <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-            <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wide">Allergies</span>
-            <span className="text-[10px] text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-full font-bold">{report.allergies.length}</span>
+            <span className="text-xs font-bold text-slate-800 uppercase tracking-wide">Allergies</span>
+            <span className="text-[11px] text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-full font-bold">{report.allergies.length}</span>
           </div>
           {report.allergies.length === 0 ? (
             <p className="text-[11px] text-slate-400 italic">None recorded</p>
           ) : (
             <div className="space-y-0.5 mb-3">
               {report.allergies.map((a) => (
-                <div key={a.id} className="flex items-center gap-1 py-0.5">
-                  <span className="text-[11px] font-medium text-slate-900">{a.substanceName}</span>
-                  {a.reaction && <span className="text-[9px] text-slate-500">({a.reaction})</span>}
-                  {a.severity && <span className="text-[9px] text-amber-600 font-medium">[{a.severity}]</span>}
+                <div key={a.id} className="flex items-center gap-1.5 py-0.5">
+                  <span className="text-xs font-bold text-slate-900">{a.substanceName}</span>
+                  {a.reaction && <span className="text-[10px] text-slate-500">({a.reaction})</span>}
+                  {a.severity && <span className="text-[10px] text-amber-600 font-bold">[{a.severity}]</span>}
                 </div>
               ))}
             </div>
@@ -555,8 +564,8 @@ const PreVisitPage = () => {
           {/* Section: Vaccinations */}
           <div className="flex items-center gap-1.5 mb-1.5 sticky top-0 bg-slate-50/95 backdrop-blur-sm py-1 -mx-0.5 px-0.5 z-10">
             <Syringe className="w-3.5 h-3.5 text-teal-600" />
-            <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wide">Vaccinations</span>
-            <span className="text-[10px] text-teal-700 bg-teal-100 px-1.5 py-0.5 rounded-full font-bold">{report.immunizations.length}</span>
+            <span className="text-xs font-bold text-slate-800 uppercase tracking-wide">Vaccinations</span>
+            <span className="text-[11px] text-teal-700 bg-teal-100 px-1.5 py-0.5 rounded-full font-bold">{report.immunizations.length}</span>
           </div>
           {report.immunizations.length === 0 ? (
             <p className="text-[11px] text-slate-400 italic">None recorded</p>
@@ -565,8 +574,8 @@ const PreVisitPage = () => {
               {report.immunizations.map((im) => (
                 <div key={im.id} className="flex items-center gap-1 py-0.5">
                   <CheckCircle2 className="w-3 h-3 text-teal-500 shrink-0" />
-                  <span className="text-[11px] text-slate-900">{im.vaccineName}</span>
-                  <span className="text-[9px] text-slate-400">{im.occurrenceDate ?? ""}</span>
+                  <span className="text-xs font-medium text-slate-900">{im.vaccineName}</span>
+                  {im.occurrenceDate && <span className="text-[10px] text-slate-400">Received {fmtDate(im.occurrenceDate)}</span>}
                 </div>
               ))}
             </div>
@@ -575,14 +584,14 @@ const PreVisitPage = () => {
           {/* Section: Questions for Doctor */}
           <div className="flex items-center gap-1.5 mb-1.5 sticky top-0 bg-slate-50/95 backdrop-blur-sm py-1 -mx-0.5 px-0.5 z-10">
             <MessageCircleQuestion className="w-3.5 h-3.5 text-violet-600" />
-            <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wide">Ask Your Doctor</span>
-            {narrative && <span className="text-[8px] text-violet-600 bg-violet-100 px-1 py-0.5 rounded font-bold">AI</span>}
+            <span className="text-xs font-bold text-slate-800 uppercase tracking-wide">Questions for Your Visit</span>
+            {narrative && <span className="text-[9px] text-violet-600 bg-violet-100 px-1 py-0.5 rounded font-bold">AI</span>}
           </div>
           <div className="space-y-1.5">
             {displayQuestions.map((q, i) => (
               <div key={i} className="flex gap-1.5">
                 <span className="w-4 h-4 bg-violet-100 text-violet-700 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0 mt-0.5">{i + 1}</span>
-                <p className="text-[11px] text-slate-700 leading-snug">{q}</p>
+                <p className="text-xs text-slate-700 leading-snug">{q}</p>
               </div>
             ))}
           </div>
@@ -590,8 +599,8 @@ const PreVisitPage = () => {
       </div>
 
       {/* ===== FOOTER ===== */}
-      <div className="shrink-0 pt-1.5 border-t border-slate-100 mt-1">
-        <p className="text-[9px] text-slate-400 leading-tight text-center">{report.disclaimer}</p>
+      <div className="shrink-0 pt-2 border-t border-slate-200 mt-1.5">
+        <p className="text-[11px] text-slate-500 font-medium leading-snug text-center">{report.disclaimer}</p>
       </div>
     </div>
   );
