@@ -1,18 +1,16 @@
 // -----------------------------------------------------------
 // MedicationsPage — AI-Powered Medication Intelligence (Phase 6)
 // -----------------------------------------------------------
-// Single-column layout following Phase 4 design philosophy:
-//   - Breathing room, generous spacing
-//   - Interaction alerts → AI summary → medication list → doctor Qs
-// All Phase 5/6 features preserved: drug interactions, AI summary,
-// "Ask AI" per med, doctor questions, source badges.
+// Viewport-fit two-column layout. NO scrolling on the outer shell.
+// Left: compact med list + AI tools. Right: detail panel.
+// All AI features preserved: interactions, summary, Ask AI, Qs.
 // -----------------------------------------------------------
 
 import { useUnifiedData } from "../hooks/useUnifiedData";
 import { usePatient } from "../hooks/usePatient";
 import { useAIAnalysis } from "../hooks/useAIAnalysis";
-import MedicationCard from "../components/data/MedicationCard";
-import AlertBanner from "../components/data/AlertBanner";
+import SourceBadge from "../components/ui/SourceBadge";
+import MergeBadge from "../components/ui/MergeBadge";
 import { SkeletonCardList, EmptyState } from "../components/ui/Skeleton";
 import {
   Pill,
@@ -21,11 +19,17 @@ import {
   BrainCircuit,
   Loader2,
   Stethoscope,
+  MessageSquare,
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  X,
+  MessageCircle,
   ChevronDown,
   ChevronUp,
-  MessageSquare,
 } from "lucide-react";
 import { useState, useMemo } from "react";
+import type { MergedMedication } from "../types/merged";
 
 type StatusFilter = "all" | "active" | "stopped" | "unknown";
 
@@ -36,6 +40,7 @@ const MedicationsPage = () => {
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [selectedMed, setSelectedMed] = useState<MergedMedication | null>(null);
   const [showMedSummary, setShowMedSummary] = useState(false);
   const [showDoctorQuestions, setShowDoctorQuestions] = useState(false);
 
@@ -46,240 +51,304 @@ const MedicationsPage = () => {
         if (statusFilter === "active") return m.status === "active";
         if (statusFilter === "stopped")
           return m.status === "stopped" || m.status === "completed";
-        return (
-          m.status !== "active" &&
-          m.status !== "stopped" &&
-          m.status !== "completed"
-        );
+        return m.status !== "active" && m.status !== "stopped" && m.status !== "completed";
       });
     }
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       meds = meds.filter(
-        (m) =>
-          m.name.toLowerCase().includes(q) ||
-          (m.dosageInstruction?.toLowerCase().includes(q) ?? false)
+        (m) => m.name.toLowerCase().includes(q) || (m.dosageInstruction?.toLowerCase().includes(q) ?? false)
       );
     }
     return meds;
   }, [unified.medications, search, statusFilter]);
 
-  const activeCount = unified.medications.filter(
-    (m) => m.status === "active"
-  ).length;
+  const activeCount = unified.medications.filter((m) => m.status === "active").length;
+  const interactionCount = ai.tier1?.drugInteractions.length ?? 0;
 
   const getInteractionsForMed = (medName: string) => {
     if (!ai.tier1) return [];
     return ai.tier1.drugInteractions.filter(
-      (d) =>
-        d.drugA.toLowerCase() === medName.toLowerCase() ||
-        d.drugB.toLowerCase() === medName.toLowerCase()
+      (d) => d.drugA.toLowerCase() === medName.toLowerCase() || d.drugB.toLowerCase() === medName.toLowerCase()
     );
   };
 
   if (unified.isLoading) {
-    return (
-      <div className="h-full flex flex-col items-center justify-center">
-        <SkeletonCardList count={5} />
-      </div>
-    );
+    return (<div className="h-full flex flex-col items-center justify-center"><SkeletonCardList count={5} /></div>);
+  }
+  if (unified.medications.length === 0) {
+    return (<div className="h-full flex items-center justify-center"><EmptyState icon={Pill} title="No medications found" description="No medication records were found across connected health systems." /></div>);
   }
 
-  if (unified.medications.length === 0) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        <EmptyState
-          icon={Pill}
-          title="No medications found"
-          description="No medication records were found across connected health systems."
-        />
-      </div>
-    );
-  }
+  const selInteractions = selectedMed ? getInteractionsForMed(selectedMed.name) : [];
+  const selExplanation = selectedMed ? ai.explanations.get(selectedMed.id) : undefined;
+  const selIsExplaining = selectedMed ? ai.explainLoading === selectedMed.id : false;
 
   return (
-    <div className="h-full flex flex-col gap-3 overflow-hidden">
-      {/* ── Header ── */}
-      <div className="shrink-0">
-        <div className="flex items-center gap-2.5 mb-1">
-          <Pill className="w-6 h-6 text-blue-600" />
-          <h1 className="text-2xl font-bold text-slate-900">Medications</h1>
-          <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold">
+    <div className="h-full flex flex-col overflow-hidden">
+      {/* ===== HEADER ROW ===== */}
+      <div className="flex items-center justify-between shrink-0 pb-2">
+        <div className="flex items-center gap-2.5">
+          <Pill className="w-5 h-5 text-blue-600" />
+          <h1 className="text-xl font-bold text-slate-900">Medications</h1>
+          <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold">
             {unified.medications.length} total · {activeCount} active
           </span>
-        </div>
-        <p className="text-[15px] text-slate-500">
-          All medications from all connected health systems
-        </p>
-      </div>
-
-      {/* ── Search + Filter ── */}
-      <div className="shrink-0 flex gap-3">
-        <div className="flex-1 relative">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Search medications..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all"
-          />
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Filter className="w-4 h-4 text-slate-400" />
-          {(["all", "active", "stopped", "unknown"] as StatusFilter[]).map(
-            (f) => (
-              <button
-                key={f}
-                onClick={() => setStatusFilter(f)}
-                className={`px-3 py-2 text-xs font-medium rounded-lg transition-all ${
-                  statusFilter === f
-                    ? "bg-emerald-600 text-white shadow-sm"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                }`}
-              >
-                {f.charAt(0).toUpperCase() + f.slice(1)}
-              </button>
-            )
+          {interactionCount > 0 && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-bold">
+              {interactionCount} interaction{interactionCount !== 1 ? "s" : ""}
+            </span>
           )}
         </div>
       </div>
 
-      {/* ── Scrollable content area ── */}
-      <div className="flex-1 min-h-0 overflow-y-auto pr-1">
-      <div className="space-y-3">
-      {/* ── Interaction Alerts ── */}
-      {ai.tier1 && ai.tier1.drugInteractions.length > 0 && (
-        <AlertBanner drugInteractions={ai.tier1.drugInteractions} />
-      )}
+      {/* ===== SEARCH + FILTER ===== */}
+      <div className="shrink-0 flex gap-2 pb-2">
+        <div className="flex-1 relative">
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input type="text" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-3 py-1.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all" />
+        </div>
+        <div className="flex items-center gap-1">
+          <Filter className="w-3.5 h-3.5 text-slate-400" />
+          {(["all", "active", "stopped", "unknown"] as StatusFilter[]).map((f) => (
+            <button key={f} onClick={() => setStatusFilter(f)}
+              className={`px-2.5 py-1.5 text-[11px] font-medium rounded-md transition-all ${statusFilter === f ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>
+              {f.charAt(0).toUpperCase() + f.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
 
-      {/* ── AI Medication Summary (collapsible) ── */}
-      {ai.tier2.medicationSummary && (
-        <div className="bg-emerald-50/70 rounded-2xl border border-emerald-200 overflow-hidden">
-          <button
-            onClick={() => setShowMedSummary(!showMedSummary)}
-            className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-emerald-50 transition-colors"
-          >
-            <BrainCircuit className="w-5 h-5 text-emerald-600 shrink-0" />
-            <span className="text-[15px] font-bold text-emerald-900 flex-1">
-              AI Medication Summary
-            </span>
-            {showMedSummary ? (
-              <ChevronUp className="w-4 h-4 text-emerald-600" />
-            ) : (
-              <ChevronDown className="w-4 h-4 text-emerald-600" />
-            )}
-          </button>
-          {showMedSummary && (
-            <div className="px-5 pb-4">
-              <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">
-                {ai.tier2.medicationSummary.text}
-              </p>
-              <p className="text-xs text-slate-400 mt-3">
-                {ai.disclaimer}
-              </p>
+      {/* ===== MAIN TWO-COLUMN ===== */}
+      <div className="flex-1 min-h-0 grid grid-cols-[1fr_1fr] gap-3">
+
+        {/* LEFT — Compact med list */}
+        <div className="flex flex-col min-h-0 bg-white rounded-xl border border-slate-200 overflow-hidden">
+          {/* Interaction alert strip */}
+          {interactionCount > 0 && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-red-50 to-amber-50 border-b border-red-200 shrink-0">
+              <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+              <span className="text-xs font-bold text-red-800">
+                {interactionCount} Drug Interaction{interactionCount !== 1 ? "s" : ""} Detected
+              </span>
             </div>
           )}
-        </div>
-      )}
 
-      {/* Tier 2 loading */}
-      {ai.tier2.isLoading && !ai.tier2.medicationSummary && (
-        <div className="flex items-center gap-3 p-5 bg-emerald-50/50 rounded-2xl border border-emerald-200/50">
-          <Loader2 className="w-5 h-5 text-emerald-600 animate-spin" />
-          <span className="text-[15px] text-slate-600">
-            Analyzing your medications...
-          </span>
-        </div>
-      )}
+          {/* Med list */}
+          <div className="flex-1 overflow-y-auto">
+            {filtered.length === 0 ? (
+              <div className="p-6 text-center text-sm text-slate-400">No medications match</div>
+            ) : filtered.map((med) => {
+              const isActive = med.status === "active";
+              const isStopped = med.status === "stopped" || med.status === "completed";
+              const hasInteraction = getInteractionsForMed(med.name).length > 0;
+              const isSelected = selectedMed?.id === med.id;
 
-      {/* ── Medication Cards ── */}
-      <div className="space-y-3">
-        {filtered.length === 0 ? (
-          <div className="p-8 text-center text-[15px] text-slate-400 bg-white rounded-2xl border border-slate-200">
-            No medications match your criteria
+              return (
+                <button key={med.id} onClick={() => setSelectedMed(isSelected ? null : med)}
+                  className={`w-full flex items-center gap-2 px-3 py-2 text-left border-b border-slate-100 last:border-0 transition-all ${
+                    isSelected ? "bg-blue-50 border-l-2 border-l-blue-500" : "hover:bg-slate-50 border-l-2 border-l-transparent"
+                  }`}>
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                    hasInteraction ? "bg-amber-100" : isActive ? "bg-blue-50" : "bg-slate-100"
+                  }`}>
+                    {hasInteraction ? <AlertTriangle className="w-3.5 h-3.5 text-amber-600" /> : <Pill className={`w-3.5 h-3.5 ${isActive ? "text-blue-500" : "text-slate-400"}`} />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-slate-900 truncate">{med.name}</div>
+                    <div className="text-[11px] text-slate-500 truncate">{med.dosageInstruction ?? "No dosage info"}</div>
+                  </div>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${
+                    isActive ? "bg-emerald-100 text-emerald-700" : isStopped ? "bg-slate-100 text-slate-500" : "bg-amber-100 text-amber-700"
+                  }`}>
+                    {med.status}
+                  </span>
+                </button>
+              );
+            })}
           </div>
-        ) : (
-          filtered.map((med) => (
-            <MedicationCard
-              key={med.id}
-              medication={med}
-              interactions={getInteractionsForMed(med.name)}
-              explanation={ai.explanations.get(med.id)}
-              isExplaining={ai.explainLoading === med.id}
-              onAskAI={ai.askAI}
-              aiAvailable={ai.aiAvailable}
-            />
-          ))
-        )}
-      </div>
 
-      {/* ── "Ask My Doctor" Button ── */}
-      <div className="space-y-3">
-        <button
-          onClick={() => {
-            if (!ai.doctorQuestions) ai.askDoctorAboutMeds();
-            setShowDoctorQuestions(!showDoctorQuestions);
-          }}
-          disabled={ai.doctorQuestionsLoading}
-          className={`w-full flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-2xl font-semibold text-[15px] transition-all ${
-            ai.doctorQuestionsLoading
-              ? "bg-slate-100 text-slate-400 cursor-wait"
-              : ai.doctorQuestions
-                ? "bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100"
-                : "bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:from-violet-700 hover:to-purple-700 shadow-lg"
-          }`}
-        >
-          {ai.doctorQuestionsLoading ? (
+          {/* Bottom bar — AI tools */}
+          <div className="shrink-0 border-t border-slate-200 bg-slate-50 p-2 flex gap-1.5">
+            {/* AI Summary toggle */}
+            {ai.tier2.medicationSummary && (
+              <button onClick={() => { setShowMedSummary(!showMedSummary); setSelectedMed(null); }}
+                className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] font-medium rounded-lg transition-all ${
+                  showMedSummary ? "bg-emerald-100 text-emerald-700" : "bg-white text-slate-600 border border-slate-200 hover:bg-emerald-50"
+                }`}>
+                <BrainCircuit className="w-3.5 h-3.5" /> AI Summary
+              </button>
+            )}
+            {ai.tier2.isLoading && !ai.tier2.medicationSummary && (
+              <div className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] text-slate-400">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Analyzing…
+              </div>
+            )}
+            {/* Doctor Qs toggle */}
+            <button
+              onClick={() => { if (!ai.doctorQuestions) ai.askDoctorAboutMeds(); setShowDoctorQuestions(!showDoctorQuestions); setSelectedMed(null); }}
+              disabled={ai.doctorQuestionsLoading}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] font-medium rounded-lg transition-all ${
+                ai.doctorQuestionsLoading ? "bg-slate-100 text-slate-400 cursor-wait"
+                  : showDoctorQuestions && ai.doctorQuestions ? "bg-violet-100 text-violet-700"
+                  : "bg-white text-slate-600 border border-slate-200 hover:bg-violet-50"
+              }`}>
+              {ai.doctorQuestionsLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Stethoscope className="w-3.5 h-3.5" />}
+              Doctor Qs
+            </button>
+          </div>
+        </div>
+
+        {/* RIGHT — Detail panel */}
+        <div className="flex flex-col min-h-0 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          {/* --- AI Summary overlay --- */}
+          {showMedSummary && ai.tier2.medicationSummary ? (
             <>
-              <Loader2 className="w-5 h-5 animate-spin" />
-              Generating questions...
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100 shrink-0 bg-emerald-50">
+                <BrainCircuit className="w-5 h-5 text-emerald-600" />
+                <h2 className="text-sm font-bold text-emerald-900">AI Medication Summary</h2>
+                <button onClick={() => setShowMedSummary(false)} className="ml-auto w-7 h-7 flex items-center justify-center rounded-lg hover:bg-emerald-100 transition-colors">
+                  <X className="w-4 h-4 text-emerald-600" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4">
+                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">{ai.tier2.medicationSummary.text}</p>
+                <p className="text-xs text-slate-400 mt-4">{ai.disclaimer}</p>
+              </div>
+            </>
+          ) : showDoctorQuestions && ai.doctorQuestions ? (
+            /* --- Doctor Questions overlay --- */
+            <>
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100 shrink-0 bg-violet-50">
+                <MessageSquare className="w-5 h-5 text-violet-600" />
+                <h2 className="text-sm font-bold text-violet-900">Questions for Your Doctor</h2>
+                <button onClick={() => setShowDoctorQuestions(false)} className="ml-auto w-7 h-7 flex items-center justify-center rounded-lg hover:bg-violet-100 transition-colors">
+                  <X className="w-4 h-4 text-violet-600" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
+                {ai.doctorQuestions.questions.map((q, i) => (
+                  <div key={i} className="flex gap-2.5">
+                    <div className="w-6 h-6 bg-violet-100 text-violet-700 rounded-full flex items-center justify-center text-xs font-bold shrink-0">{i + 1}</div>
+                    <p className="text-sm text-slate-700 leading-relaxed">{q}</p>
+                  </div>
+                ))}
+                <p className="text-xs text-slate-400 mt-3">{ai.disclaimer}</p>
+              </div>
+            </>
+          ) : selectedMed ? (
+            /* --- Med detail --- */
+            <>
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100 shrink-0 bg-slate-50">
+                <Pill className="w-5 h-5 text-blue-600" />
+                <h2 className="text-sm font-bold text-slate-900 truncate">{selectedMed.name}</h2>
+                <button onClick={() => setSelectedMed(null)} className="ml-auto w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-200 transition-colors">
+                  <X className="w-4 h-4 text-slate-500" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {/* Status + merge */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium ${
+                    selectedMed.status === "active" ? "bg-emerald-100 text-emerald-700"
+                      : selectedMed.status === "stopped" || selectedMed.status === "completed" ? "bg-slate-100 text-slate-500"
+                      : "bg-amber-100 text-amber-700"
+                  }`}>
+                    {selectedMed.status === "active" && <CheckCircle2 className="w-3 h-3" />}
+                    {(selectedMed.status === "stopped" || selectedMed.status === "completed") && <Clock className="w-3 h-3" />}
+                    {selectedMed.status}
+                  </span>
+                  <MergeBadge status={selectedMed.mergeStatus} />
+                  {selectedMed.allSources.map((s) => <SourceBadge key={s.systemId} source={s} compact />)}
+                </div>
+
+                {/* Dosage */}
+                <div>
+                  <div className="text-xs font-bold text-slate-500 uppercase mb-1">Dosage</div>
+                  <p className="text-sm text-slate-700">{selectedMed.dosageInstruction ?? "No dosage information"}</p>
+                </div>
+
+                {/* Prescriber / date */}
+                <div className="flex gap-4 flex-wrap text-sm text-slate-600">
+                  {selectedMed.prescriber && <div><span className="font-medium text-slate-700">Prescriber:</span> {selectedMed.prescriber}</div>}
+                  {selectedMed.dateWritten && <div><span className="font-medium text-slate-700">Prescribed:</span> {selectedMed.dateWritten}</div>}
+                </div>
+
+                {/* Sources detail */}
+                <div>
+                  <div className="text-xs font-bold text-slate-500 uppercase mb-1">Sources</div>
+                  <p className="text-sm text-slate-600">{selectedMed.allSources.map((s) => s.systemName).join(", ")}</p>
+                </div>
+
+                {/* Drug interactions */}
+                {selInteractions.length > 0 && (
+                  <div className="p-3 bg-red-50 rounded-xl border border-red-200">
+                    <div className="text-xs font-bold text-red-700 uppercase mb-2">Drug Interactions</div>
+                    {selInteractions.map((int) => (
+                      <div key={int.id} className="flex items-start gap-2 mb-1.5 last:mb-0">
+                        <AlertTriangle className={`w-4 h-4 mt-0.5 shrink-0 ${int.severity === "critical" ? "text-red-500" : "text-amber-500"}`} />
+                        <div className="text-sm">
+                          <span className={`font-semibold ${int.severity === "critical" ? "text-red-800" : "text-amber-800"}`}>
+                            {int.drugA === selectedMed.name ? int.drugB : int.drugA}
+                          </span>
+                          <span className="text-slate-700 ml-1">{int.effect}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* AI explanation */}
+                {selExplanation && (
+                  <div className="p-3. bg-emerald-50 rounded-xl border border-emerald-200">
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <BrainCircuit className="w-4 h-4 text-emerald-600" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">AI Explanation</span>
+                    </div>
+                    <p className="text-sm text-slate-800 leading-relaxed">{selExplanation.explanation}</p>
+                    <p className="text-xs text-slate-500 mt-2">Not medical advice — discuss with your provider</p>
+                  </div>
+                )}
+
+                {/* Ask AI button */}
+                {!selExplanation && ai.aiAvailable && (
+                  <button onClick={() => ai.askAI(selectedMed)} disabled={selIsExplaining}
+                    className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl transition-colors ${
+                      selIsExplaining ? "bg-slate-100 text-slate-400 cursor-wait" : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200"
+                    }`}>
+                    {selIsExplaining ? <><Loader2 className="w-4 h-4 animate-spin" /> Asking AI…</> : <><MessageCircle className="w-4 h-4" /> Ask AI: "What does this do?"</>}
+                  </button>
+                )}
+              </div>
             </>
           ) : (
-            <>
-              <Stethoscope className="w-5 h-5" />
-              {ai.doctorQuestions
-                ? showDoctorQuestions
-                  ? "Hide doctor questions"
-                  : "Show doctor questions"
-                : "What should I ask my doctor about my medications?"}
-            </>
-          )}
-        </button>
-
-        {showDoctorQuestions && ai.doctorQuestions && (
-          <div className="bg-violet-50 rounded-2xl border border-violet-200 p-5 space-y-3">
-            <div className="flex items-center gap-2">
-              <MessageSquare className="w-5 h-5 text-violet-600" />
-              <h3 className="text-[15px] font-bold text-violet-900">
-                Questions for Your Doctor
-              </h3>
-            </div>
-            <div className="space-y-2.5">
-              {ai.doctorQuestions.questions.map((q, i) => (
-                <div
-                  key={i}
-                  className="flex items-start gap-3 p-3.5 bg-white rounded-xl border border-violet-100"
-                >
-                  <div className="w-7 h-7 bg-violet-100 rounded-full flex items-center justify-center text-violet-700 text-sm font-bold shrink-0">
-                    {i + 1}
-                  </div>
-                  <p className="text-[15px] text-slate-700 leading-relaxed">
-                    {q}
-                  </p>
+            /* --- Empty state --- */
+            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center mb-3">
+                <Pill className="w-7 h-7 text-blue-600" />
+              </div>
+              <h3 className="text-sm font-bold text-slate-900 mb-1">Medication Details</h3>
+              <p className="text-xs text-slate-500 leading-relaxed max-w-[220px] mb-4">
+                Select a medication to see dosage, sources, interactions, and AI insights.
+              </p>
+              <div className="grid grid-cols-3 gap-3 w-full max-w-xs">
+                <div className="text-center p-2 bg-blue-50 rounded-lg">
+                  <div className="text-lg font-extrabold text-blue-700">{activeCount}</div>
+                  <div className="text-[10px] text-blue-600 font-medium">Active</div>
                 </div>
-              ))}
+                <div className="text-center p-2 bg-red-50 rounded-lg">
+                  <div className="text-lg font-extrabold text-red-700">{interactionCount}</div>
+                  <div className="text-[10px] text-red-600 font-medium">Interactions</div>
+                </div>
+                <div className="text-center p-2 bg-slate-50 rounded-lg">
+                  <div className="text-lg font-extrabold text-slate-700">{unified.medications.length}</div>
+                  <div className="text-[10px] text-slate-500 font-medium">Total</div>
+                </div>
+              </div>
             </div>
-            <p className="text-xs text-slate-400">{ai.disclaimer}</p>
-          </div>
-        )}
-      </div>
-
-      {/* ── Disclaimer ── */}
-      <p className="text-xs text-slate-400 leading-relaxed text-center pt-2">
-        {ai.disclaimer}
-      </p>
-      </div>
+          )}
+        </div>
       </div>
     </div>
   );
